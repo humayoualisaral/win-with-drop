@@ -3,7 +3,7 @@
 import Layout from "@/components/Layout";
 import WalletValidator from "../WalletValidator";
 
-export default function Actions() {
+export default function Action() {
   return (
      <WalletValidator/>
   );

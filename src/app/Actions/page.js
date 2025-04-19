@@ -1,11 +1,11 @@
 // app/dashboard/page.js
 
 import Layout from "@/components/Layout";
-import Actions from "@/components/Actions/Actions";
+import Action from "@/components/Actions/Actions";
 export default function Actions() {
   return (
     <Layout>
-      <Actions/>
+      <Action/>
     </Layout>
   );
 }
