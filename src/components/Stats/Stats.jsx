@@ -1,7 +1,4 @@
-// app/dashboard/page.js
-
-import Layout from "@/components/Layout";
-
+'use client'
 export default function Stats() {
   return (
       <h1>Welcome to the Stats</h1>

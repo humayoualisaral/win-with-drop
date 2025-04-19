@@ -1,3 +1,4 @@
+'use client'
 // app/dashboard/page.js
 
 import Layout from "@/components/Layout";

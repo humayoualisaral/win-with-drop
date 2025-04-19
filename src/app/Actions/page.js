@@ -1,5 +1,4 @@
-// app/dashboard/page.js
-
+'use client'
 import Layout from "@/components/Layout";
 import Action from "@/components/Actions/Actions";
 export default function Actions() {
