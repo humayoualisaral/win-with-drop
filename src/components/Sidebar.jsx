@@ -65,7 +65,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const menuItems = [
   { text: 'Admin Actions', id: 'adminActions', icon: <AdminPanelSettingsIcon /> },
   { text: 'Stats', id: 'stats', icon: <AppsIcon /> },
-  { text: 'Admins Info', id: 'adminsInfo', icon: <FeedIcon /> }
+  // { text: 'Admins Info', id: 'adminsInfo', icon: <FeedIcon /> }
 ];
 
 const Sidebar = ({ open, activeComponent, setActiveComponent }) => {
