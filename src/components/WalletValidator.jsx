@@ -132,7 +132,7 @@ const colors = {
               <div className="w-full lg:w-1/2">
                 <div className="mb-4">
                   <label className="block mb-2 font-medium" style={{ color: colors.primary }} htmlFor="wallet-address">
-                    Enter Ethereum wallet address(es)
+                    Enter wallet address(es)
                   </label>
                   
                   <div className="relative h-64 border-2 rounded-lg" style={{ borderColor: colors.primary }}>
@@ -241,7 +241,7 @@ const colors = {
                         </table>
                       ) : (
                         <div className="h-full flex items-center justify-center text-gray-400 p-6">
-                          <p>Enter Ethereum wallet addresses to see validation results</p>
+                          <p>Enter wallet addresses to see validation results</p>
                         </div>
                       )}
                     </div>
