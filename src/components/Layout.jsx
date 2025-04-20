@@ -7,7 +7,7 @@ import MainContent from './MainContent';
 // Include any other imports you need
 
 export default function Layout({ children, activeComponent, setActiveComponent }) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(true);
 
   const handleDrawerOpen = () => {
     setOpen(true);

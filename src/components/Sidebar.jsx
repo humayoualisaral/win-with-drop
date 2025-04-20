@@ -70,7 +70,7 @@ const menuItems = [
 
 const Sidebar = ({ open, activeComponent, setActiveComponent }) => {
   const theme = useTheme();
-
+console.log(activeComponent,"this is active")
   return (
     <Drawer variant="permanent" open={open}>
       <div className='flex justify-between p-[20px] h-[83px]' >
@@ -89,7 +89,7 @@ const Sidebar = ({ open, activeComponent, setActiveComponent }) => {
       <Divider />
       <List>
         {menuItems.map((text, index) => (
-          <ListItem key={index}  disablePadding sx={{ display: 'block' }} onClick={()=>{setActiveComponent(text.id)}}>
+          <ListItem key={index}   disablePadding sx={activeComponent===text.id?{ display: 'block',background:"rgb(234 179 8)",color:"fff" }:{ display: 'block'}} onClick={()=>{setActiveComponent(text.id)}}>
             <ListItemButton
               sx={[
                 {
@@ -118,6 +118,7 @@ const Sidebar = ({ open, activeComponent, setActiveComponent }) => {
                     : {
                         mr: 'auto',
                       },
+                      activeComponent===text.id?{color:"#fff"}:{}
                 ]}
               >
                 {index === 0 ? (
@@ -139,6 +140,8 @@ const Sidebar = ({ open, activeComponent, setActiveComponent }) => {
                     : {
                         opacity: 0,
                       },
+                      activeComponent===text.id?{color:"#fff",fontWeight:"1000"}:{}
+
                 ]}
               />
             </ListItemButton>
