@@ -18,7 +18,7 @@ export default function Layout({ children, activeComponent, setActiveComponent }
   };
 
   return (
-    <div className="flex">
+    <div>
   
  
       <Box sx={{ display: 'flex' }}>

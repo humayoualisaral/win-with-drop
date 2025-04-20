@@ -8,6 +8,19 @@ export default function WalletValidator() {
   const [highlightedText, setHighlightedText] = useState('');
   const textareaRef = useRef(null);
 
+ // Color scheme
+const colors = {
+  primary: '#000',       // Deeper indigo - more authoritative
+  secondary: '#0891b2',     // Cyan - complementary to indigo
+  success: 'rgb(234 179 8)',       // Emerald - keep as is for success states
+  error: '#dc2626',         // Darker red - less harsh but still clear
+  background: '#f8fafc',    // Lighter background for better contrast
+  card: '#ffffff',          // White for cards
+  text: '#0f172a',          // Slate-900 - deeper text for better readability
+  lightText: '#64748b',     // Slate-500 - softer secondary text
+  border: '#e2e8f0',        // Subtle border color
+  highlight: 'rgb(255 221 96)'      // Very light blue for highlights
+};
   // Function to validate a single Ethereum address
   const isValidEthAddress = (address) => {
     // Check if it's a non-empty string and starts with '0x'
@@ -104,150 +117,157 @@ export default function WalletValidator() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: 'rgb(183, 140, 219)' }}>
-          Ethereum Wallet Validator
-        </h2>
-        
-        <div className="flex flex-col lg:flex-row gap-6 mb-6">
-          {/* Left column - Text Area */}
-          <div className="w-full lg:w-1/2">
-            <div className="bg-white rounded-lg shadow-md p-4 h-full">
-              <label className="block mb-3 font-medium" style={{ color: 'rgb(183, 140, 219)' }} htmlFor="wallet-address">
-                Enter Ethereum wallet address(es)
-              </label>
-              
-              <div className="relative h-64">
-                {/* Highlighted overlay */}
-                <div
-                  className="absolute inset-0 overflow-auto whitespace-pre-wrap p-4 font-mono text-transparent pointer-events-none rounded-md"
-                  dangerouslySetInnerHTML={{ __html: highlightedText }}
-                  style={{
-                    caretColor: 'transparent',
-                    zIndex: 1
-                  }}
-                />
-                
-                {/* Actual textarea */}
-                <textarea
-                  ref={textareaRef}
-                  id="wallet-address"
-                  className="absolute inset-0 w-full h-full p-4 border-2 rounded-md font-mono resize-none"
-                  style={{ 
-                    backgroundColor: 'transparent',
-                    caretColor: 'black',
-                    borderColor: 'rgb(183, 140, 219)',
-                    boxShadow: '0 0 10px rgba(183, 140, 219, 0.2)'
-                  }}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onScroll={handleTextareaScroll}
-                  placeholder="Enter wallet addresses separated by commas:&#10;&#10;0x71C7656EC7ab88b098defB751B7401B5f6d8976F,&#10;0x..."
-                />
-              </div>
-              
-              <div className="mt-2 text-sm text-gray-500">
-                <p>Separate multiple addresses with commas</p>
-              </div>
-            </div>
+    <div className="pt-[90px] flex items-center justify-center p-4" style={{ backgroundColor: colors.background }}>
+      <div className="w-full max-w-6xl">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="p-6 border-b" style={{ borderColor: colors.primary, backgroundColor: colors.primary }}>
+            <h2 className="text-2xl font-bold text-center text-white">
+              Enter User Addresses
+            </h2>
           </div>
           
-          {/* Right column - Validation Table */}
-          <div className="w-full lg:w-1/2">
-            <div className="bg-white rounded-lg shadow-md p-4 h-full">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium" style={{ color: 'rgb(183, 140, 219)' }}>
-                  Validation Results
-                </h3>
-                {validationResults.length > 0 && (
-                  <div className="px-3 py-1 rounded-full text-white text-xs font-medium" 
-                      style={{ backgroundColor: isValid ? 'rgb(183, 140, 219)' : 'rgb(255, 221, 96)' }}>
-                    {isValid ? 'All Valid' : `${validationResults.filter(r => !r.isValid).length} Invalid`}
+          <div className="p-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Left column - Text Area */}
+              <div className="w-full lg:w-1/2">
+                <div className="mb-4">
+                  <label className="block mb-2 font-medium" style={{ color: colors.primary }} htmlFor="wallet-address">
+                    Enter Ethereum wallet address(es)
+                  </label>
+                  
+                  <div className="relative h-64 border-2 rounded-lg" style={{ borderColor: colors.primary }}>
+                    {/* Highlighted overlay */}
+                    <div
+                      className="absolute inset-0 overflow-auto whitespace-pre-wrap p-4 font-mono text-transparent pointer-events-none"
+                      dangerouslySetInnerHTML={{ __html: highlightedText }}
+                      style={{
+                        caretColor: 'transparent',
+                        zIndex: 1,
+                        overflowX:"hidden"
+                      }}
+                    />
+                    
+                    {/* Actual textarea */}
+                    <textarea
+                      ref={textareaRef}
+                      id="wallet-address"
+                      className="absolute inset-0 w-full h-full p-4 font-mono resize-none bg-transparent"
+                      style={{ 
+                        caretColor: colors.text,
+                        overflowX:'hidden'
+                      }}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onScroll={handleTextareaScroll}
+                      placeholder="Enter wallet addresses separated by commas:&#10;&#10;0x71C7656EC7ab88b098defB751B7401B5f6d8976F,&#10;0x..."
+                    />
                   </div>
-                )}
+                  
+                  <div className="mt-2 text-sm" style={{ color: colors.lightText }}>
+                    <p>Separate multiple addresses with commas</p>
+                  </div>
+                </div>
               </div>
               
-              <div className="overflow-hidden rounded-lg border" style={{ borderColor: 'rgb(183, 140, 219)' }}>
-                <div className="h-64 overflow-y-auto">
-                  {validationResults.length > 0 ? (
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead style={{ backgroundColor: 'rgb(183, 140, 219)' }}>
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider w-8">
-                            #
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider">
-                            Address
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider w-16">
-                            Status
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider">
-                            Issue
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {validationResults.map((result, index) => (
-                          <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {index + 1}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="h-5 w-5 rounded-full flex items-center justify-center mr-2" 
-                                    style={{ backgroundColor: result.isValid ? 'rgb(183, 140, 219)' : 'rgb(255, 221, 96)' }}>
-                                  <span className="text-white font-medium text-xs">
-                                    {result.isValid ? '✓' : '✗'}
+              {/* Right column - Validation Table */}
+              <div className="w-full lg:w-1/2">
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-medium" style={{ color: colors.primary }}>
+                      Validation Results
+                    </h3>
+                    {validationResults.length > 0 && (
+                      <div className="px-3 py-1 rounded-full text-white text-xs font-medium" 
+                          style={{ backgroundColor: isValid ? colors.success : colors.secondary }}>
+                        {isValid ? 'All Valid' : `${validationResults.filter(r => !r.isValid).length} Invalid`}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="overflow-hidden rounded-lg border border-gray-200">
+                    <div className="h-64 overflow-y-auto">
+                      {validationResults.length > 0 ? (
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead>
+                            <tr style={{ backgroundColor: colors.primary }}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-8">
+                                #
+                              </th>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                Address
+                              </th>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-16">
+                                Status
+                              </th>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                Issue
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {validationResults.map((result, index) => (
+                              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {index + 1}
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="h-5 w-5 rounded-full flex items-center justify-center mr-2" 
+                                        style={{ backgroundColor: result.isValid ? colors.success : colors.error }}>
+                                      <span className="text-white font-medium text-xs">
+                                        {result.isValid ? '✓' : '✗'}
+                                      </span>
+                                    </div>
+                                    <div className="font-mono text-xs" title={result.address}>
+                                      {formatAddress(result.address)}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                                        style={{ 
+                                          backgroundColor: result.isValid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                          color: result.isValid ? colors.success : colors.error
+                                        }}>
+                                    {result.isValid ? 'Valid' : 'Invalid'}
                                   </span>
-                                </div>
-                                <div className="font-mono text-xs" title={result.address}>
-                                  {formatAddress(result.address)}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
-                                    style={{ 
-                                      backgroundColor: result.isValid ? 'rgba(183, 140, 219, 0.1)' : 'rgba(255, 221, 96, 0.1)',
-                                      color: result.isValid ? 'rgb(183, 140, 219)' : 'rgb(255, 221, 96)'
-                                    }}>
-                                {result.isValid ? 'Valid' : 'Invalid'}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                              {!result.isValid && result.errorMessage}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400">
-                      <p>Enter Ethereum wallet addresses to see validation results</p>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">
+                                  {!result.isValid && result.errorMessage}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-gray-400 p-6">
+                          <p>Enter Ethereum wallet addresses to see validation results</p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
+            
+            {/* Transaction Button */}
+            <div className="flex justify-center mt-8 mb-4">
+            <button
+  disabled={!isValid}
+  className={`px-10 py-3 text-white font-medium text-lg rounded-lg shadow-md transition-all duration-300 ${
+    isValid ? 'hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer' : 'cursor-not-allowed'
+  }`}
+  style={{ 
+    backgroundColor: isValid ? "rgb(183 140 219)" : "#e2e8f0",
+    color: isValid ? 'white' : colors.lightText,
+    opacity: isValid ? 1 : 0.5,
+    boxShadow: isValid ? '0 4px 10px rgba(183, 140, 219, 0.4)' : 'none'
+  }}
+>
+  Add User
+</button>
+            </div>
           </div>
-        </div>
-        
-        {/* Transaction Button */}
-        <div className="flex justify-center mt-8">
-          <button
-            disabled={!isValid}
-            className={`px-10 py-3 text-white font-medium text-lg rounded-md shadow-md transition-all duration-300 ${
-              isValid ? 'hover:shadow-lg' : 'opacity-50 cursor-not-allowed'
-            }`}
-            style={{ 
-              backgroundColor: 'rgb(183, 140, 219)',
-              boxShadow: isValid ? '0 4px 10px rgba(183, 140, 219, 0.4)' : 'none'
-            }}
-          >
-            Do Transaction
-          </button>
         </div>
       </div>
     </div>
