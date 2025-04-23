@@ -13,6 +13,7 @@ import ListItemText from '@mui/material/ListItemText';
 import FeedIcon from '@mui/icons-material/Feed';
 import AppsIcon from '@mui/icons-material/Apps';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import ChainLinkVRF from './ChainLinkVRF/ChainLinkVRF';
 
 const drawerWidth = 240;
 
@@ -65,6 +66,8 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const menuItems = [
   { text: 'Admin Actions', id: 'adminActions', icon: <AdminPanelSettingsIcon /> },
   { text: 'Stats', id: 'stats', icon: <AppsIcon /> },
+  {text:'ChainLinkVRF', id:'chainLinkVRF', icon:<AppsIcon />},
+  {text:'ManageGiveAway', id:'manageGiveAway', icon:<AppsIcon />}
   // { text: 'Admins Info', id: 'adminsInfo', icon: <FeedIcon /> }
 ];
 

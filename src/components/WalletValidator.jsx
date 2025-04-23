@@ -1,174 +1,183 @@
-'use client'
-import { useState, useEffect, useRef } from 'react';
+"use client"
+import { useState, useEffect, useRef } from "react"
 
-export default function WalletValidator() {
-  const [input, setInput] = useState('');
-  const [validationResults, setValidationResults] = useState([]);
-  const [isValid, setIsValid] = useState(false);
-  const [highlightedText, setHighlightedText] = useState('');
-  const textareaRef = useRef(null);
+export default function EmailValidator() {
+  const [input, setInput] = useState("")
+  const [validationResults, setValidationResults] = useState([])
+  const [isValid, setIsValid] = useState(false)
+  const [highlightedText, setHighlightedText] = useState("")
+  const textareaRef = useRef(null)
 
- // Color scheme
-const colors = {
-  primary: '#000',       // Deeper indigo - more authoritative
-  secondary: '#0891b2',     // Cyan - complementary to indigo
-  success: 'rgb(234 179 8)',       // Emerald - keep as is for success states
-  error: '#dc2626',         // Darker red - less harsh but still clear
-  background: '#f8fafc',    // Lighter background for better contrast
-  card: '#ffffff',          // White for cards
-  text: '#0f172a',          // Slate-900 - deeper text for better readability
-  lightText: '#64748b',     // Slate-500 - softer secondary text
-  border: '#e2e8f0',        // Subtle border color
-  highlight: 'rgb(255 221 96)'      // Very light blue for highlights
-};
-  // Function to validate a single Ethereum address
-  const isValidEthAddress = (address) => {
-    // Check if it's a non-empty string and starts with '0x'
-    if (!address || typeof address !== 'string' || !address.startsWith('0x')) {
-      return false;
+  // Color scheme
+  const colors = {
+    primary: "#000", // Deeper indigo - more authoritative
+    secondary: "#0891b2", // Cyan - complementary to indigo
+    success: "rgb(234 179 8)", // Emerald - keep as is for success states
+    error: "#dc2626", // Darker red - less harsh but still clear
+    background: "#f8fafc", // Lighter background for better contrast
+    card: "#ffffff", // White for cards
+    text: "#0f172a", // Slate-900 - deeper text for better readability
+    lightText: "#64748b", // Slate-500 - softer secondary text
+    border: "#e2e8f0", // Subtle border color
+    highlight: "rgb(255 221 96)", // Very light blue for highlights
+  }
+
+  // Function to validate a single email address
+  const isValidEmail = (email) => {
+    if (!email || typeof email !== "string") {
+      return false
     }
-    
-    // Check if it has the correct length (42 characters = '0x' + 40 hex chars)
-    if (address.length !== 42) {
-      return false;
-    }
-    
-    // Check if it contains only hex characters after '0x'
-    const hexRegex = /^0x[0-9a-fA-F]{40}$/;
-    return hexRegex.test(address);
-  };
 
-  // Create a highlighted version of the text with invalid addresses marked
+    // Basic email regex pattern
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    return emailRegex.test(email)
+  }
+
+  // Create a highlighted version of the text with invalid emails marked
   const createHighlightedText = (text, results) => {
-    if (!text || !results.length) return '';
-    
-    let highlightedHTML = '';
-    let lastIndex = 0;
-    
-    // Create a map of ranges for invalid addresses
-    const addressPositions = [];
-    let currentPosition = 0;
-    
-    text.split(',').forEach((addr, index) => {
-      const trimmedAddr = addr.trim();
-      const startPos = currentPosition + (addr.length - trimmedAddr.length);
-      const endPos = startPos + trimmedAddr.length;
-      
-      if (!results[index]?.isValid) {
-        addressPositions.push({ start: startPos, end: endPos });
-      }
-      
-      currentPosition += addr.length + 1; // +1 for the comma
-    });
-    
-    // Now build the highlighted text
-    for (const { start, end } of addressPositions) {
-      highlightedHTML += text.substring(lastIndex, start);
-      highlightedHTML += `<span class="bg-red-200">${text.substring(start, end)}</span>`;
-      lastIndex = end;
-    }
-    
-    highlightedHTML += text.substring(lastIndex);
-    return highlightedHTML;
-  };
+    if (!text || !results.length) return ""
 
-  // Validate addresses on every input change
+    let highlightedHTML = ""
+    let lastIndex = 0
+
+    // Create a map of ranges for invalid emails
+    const emailPositions = []
+    let currentPosition = 0
+
+    text.split(",").forEach((email, index) => {
+      const trimmedEmail = email.trim()
+      const startPos = currentPosition + (email.length - trimmedEmail.length)
+      const endPos = startPos + trimmedEmail.length
+
+      if (!results[index]?.isValid) {
+        emailPositions.push({ start: startPos, end: endPos })
+      }
+
+      currentPosition += email.length + 1 // +1 for the comma
+    })
+
+    // Now build the highlighted text
+    for (const { start, end } of emailPositions) {
+      highlightedHTML += text.substring(lastIndex, start)
+      highlightedHTML += `<span class="bg-red-200">${text.substring(start, end)}</span>`
+      lastIndex = end
+    }
+
+    highlightedHTML += text.substring(lastIndex)
+    return highlightedHTML
+  }
+
+  // Validate emails on every input change
   useEffect(() => {
     if (!input.trim()) {
-      setValidationResults([]);
-      setIsValid(false);
-      setHighlightedText('');
-      return;
+      setValidationResults([])
+      setIsValid(false)
+      setHighlightedText("")
+      return
     }
 
-    const addresses = input.split(',').map(addr => addr.trim()).filter(addr => addr !== '');
-    const results = addresses.map(addr => ({
-      address: addr,
-      isValid: isValidEthAddress(addr),
-      errorMessage: !addr ? 'Empty address' : 
-                    !addr.startsWith('0x') ? 'Must start with 0x' :
-                    addr.length !== 42 ? 'Must be 42 characters' :
-                    'Invalid characters'
-    }));
-    
-    setValidationResults(results);
-    setIsValid(results.length > 0 && results.every(result => result.isValid));
-    
+    const emails = input
+      .split(",")
+      .map((email) => email.trim())
+      .filter((email) => email !== "")
+    const results = emails.map((email) => ({
+      email: email,
+      isValid: isValidEmail(email),
+      errorMessage: !email
+        ? "Empty email"
+        : !email.includes("@")
+          ? "Missing @ symbol"
+          : !email.includes(".")
+            ? "Missing domain"
+            : "Invalid email format",
+    }))
+
+    setValidationResults(results)
+    setIsValid(results.length > 0 && results.every((result) => result.isValid))
+
     // Create highlighted version of text
-    const highlighted = createHighlightedText(input, results);
-    setHighlightedText(highlighted);
-  }, [input]);
+    const highlighted = createHighlightedText(input, results)
+    setHighlightedText(highlighted)
+  }, [input])
 
   // Synchronize scrolling between the textarea and the highlight overlay
   const handleTextareaScroll = () => {
     if (textareaRef.current) {
-      const highlightDiv = textareaRef.current.previousSibling;
+      const highlightDiv = textareaRef.current.previousSibling
       if (highlightDiv) {
-        highlightDiv.scrollTop = textareaRef.current.scrollTop;
-        highlightDiv.scrollLeft = textareaRef.current.scrollLeft;
+        highlightDiv.scrollTop = textareaRef.current.scrollTop
+        highlightDiv.scrollLeft = textareaRef.current.scrollLeft
       }
     }
-  };
+  }
 
-  // Format address for display (truncate middle)
-  const formatAddress = (address) => {
-    if (!address || address.length < 10) return address;
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  };
+  // Format email for display (truncate middle if too long)
+  const formatEmail = (email) => {
+    if (!email || email.length < 25) return email
+    const atIndex = email.indexOf("@")
+    if (atIndex <= 0) return email
+
+    const username = email.substring(0, atIndex)
+    const domain = email.substring(atIndex)
+
+    if (username.length > 10) {
+      return `${username.substring(0, 8)}...${domain}`
+    }
+
+    return email
+  }
 
   return (
     <div className="pt-[90px] flex items-center justify-center p-4" style={{ backgroundColor: colors.background }}>
       <div className="w-full max-w-6xl">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-6 border-b" style={{ borderColor: colors.primary, backgroundColor: colors.primary }}>
-            <h2 className="text-2xl font-bold text-center text-white">
-              Enter User Addresses
-            </h2>
+            <h2 className="text-2xl font-bold text-center text-white">Enter User Emails</h2>
           </div>
-          
+
           <div className="p-6">
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Left column - Text Area */}
               <div className="w-full lg:w-1/2">
                 <div className="mb-4">
-                  <label className="block mb-2 font-medium" style={{ color: colors.primary }} htmlFor="wallet-address">
-                    Enter wallet address(es)
+                  <label className="block mb-2 font-medium" style={{ color: colors.primary }} htmlFor="email-address">
+                    Enter email address(es)
                   </label>
-                  
+
                   <div className="relative h-64 border-2 rounded-lg" style={{ borderColor: colors.primary }}>
                     {/* Highlighted overlay */}
                     <div
                       className="absolute inset-0 overflow-auto whitespace-pre-wrap p-4 font-mono text-transparent pointer-events-none"
                       dangerouslySetInnerHTML={{ __html: highlightedText }}
                       style={{
-                        caretColor: 'transparent',
+                        caretColor: "transparent",
                         zIndex: 1,
-                        overflowX:"hidden"
+                        overflowX: "hidden",
                       }}
                     />
-                    
+
                     {/* Actual textarea */}
                     <textarea
                       ref={textareaRef}
-                      id="wallet-address"
+                      id="email-address"
                       className="absolute inset-0 w-full h-full p-4 font-mono resize-none bg-transparent"
-                      style={{ 
+                      style={{
                         caretColor: colors.text,
-                        overflowX:'hidden'
+                        overflowX: "hidden",
                       }}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onScroll={handleTextareaScroll}
-                      placeholder="Enter wallet addresses separated by commas:&#10;&#10;0x71C7656EC7ab88b098defB751B7401B5f6d8976F,&#10;0x..."
+                      placeholder="Enter email addresses separated by commas:&#10;&#10;john.doe@example.com,&#10;jane.smith@company.org,&#10;..."
                     />
                   </div>
-                  
+
                   <div className="mt-2 text-sm" style={{ color: colors.lightText }}>
-                    <p>Separate multiple addresses with commas</p>
+                    <p>Separate multiple email addresses with commas</p>
                   </div>
                 </div>
               </div>
-              
+
               {/* Right column - Validation Table */}
               <div className="w-full lg:w-1/2">
                 <div className="mb-4">
@@ -177,59 +186,79 @@ const colors = {
                       Validation Results
                     </h3>
                     {validationResults.length > 0 && (
-                      <div className="px-3 py-1 rounded-full text-white text-xs font-medium" 
-                          style={{ backgroundColor: isValid ? colors.success : colors.secondary }}>
-                        {isValid ? 'All Valid' : `${validationResults.filter(r => !r.isValid).length} Invalid`}
+                      <div
+                        className="px-3 py-1 rounded-full text-white text-xs font-medium"
+                        style={{ backgroundColor: isValid ? colors.success : colors.secondary }}
+                      >
+                        {isValid ? "All Valid" : `${validationResults.filter((r) => !r.isValid).length} Invalid`}
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="overflow-hidden rounded-lg border border-gray-200">
                     <div className="h-64 overflow-y-auto">
                       {validationResults.length > 0 ? (
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead>
                             <tr style={{ backgroundColor: colors.primary }}>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-8">
+                              <th
+                                scope="col"
+                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-8"
+                              >
                                 #
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                                Address
+                              <th
+                                scope="col"
+                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
+                              >
+                                Email
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-16">
+                              <th
+                                scope="col"
+                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-16"
+                              >
                                 Status
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                              <th
+                                scope="col"
+                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
+                              >
                                 Issue
                               </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
                             {validationResults.map((result, index) => (
-                              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                                 <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                                   {index + 1}
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap">
                                   <div className="flex items-center">
-                                    <div className="h-5 w-5 rounded-full flex items-center justify-center mr-2" 
-                                        style={{ backgroundColor: result.isValid ? colors.success : colors.error }}>
+                                    <div
+                                      className="h-5 w-5 rounded-full flex items-center justify-center mr-2"
+                                      style={{ backgroundColor: result.isValid ? colors.success : colors.error }}
+                                    >
                                       <span className="text-white font-medium text-xs">
-                                        {result.isValid ? '✓' : '✗'}
+                                        {result.isValid ? "✓" : "✗"}
                                       </span>
                                     </div>
-                                    <div className="font-mono text-xs" title={result.address}>
-                                      {formatAddress(result.address)}
+                                    <div className="font-mono text-xs" title={result.email}>
+                                      {formatEmail(result.email)}
                                     </div>
                                   </div>
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap">
-                                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
-                                        style={{ 
-                                          backgroundColor: result.isValid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                          color: result.isValid ? colors.success : colors.error
-                                        }}>
-                                    {result.isValid ? 'Valid' : 'Invalid'}
+                                  <span
+                                    className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                    style={{
+                                      backgroundColor: result.isValid
+                                        ? "rgba(16, 185, 129, 0.1)"
+                                        : "rgba(239, 68, 68, 0.1)",
+                                      color: result.isValid ? colors.success : colors.error,
+                                    }}
+                                  >
+                                    {result.isValid ? "Valid" : "Invalid"}
                                   </span>
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">
@@ -241,7 +270,7 @@ const colors = {
                         </table>
                       ) : (
                         <div className="h-full flex items-center justify-center text-gray-400 p-6">
-                          <p>Enter wallet addresses to see validation results</p>
+                          <p>Enter email addresses to see validation results</p>
                         </div>
                       )}
                     </div>
@@ -249,27 +278,27 @@ const colors = {
                 </div>
               </div>
             </div>
-            
+
             {/* Transaction Button */}
             <div className="flex justify-center mt-8 mb-4">
-            <button
-  disabled={!isValid}
-  className={`px-10 py-3 text-white font-medium text-lg rounded-lg shadow-md transition-all duration-300 ${
-    isValid ? 'hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer' : 'cursor-not-allowed'
-  }`}
-  style={{ 
-    backgroundColor: isValid ? "rgb(183 140 219)" : "#e2e8f0",
-    color: isValid ? 'white' : colors.lightText,
-    opacity: isValid ? 1 : 0.5,
-    boxShadow: isValid ? '0 4px 10px rgba(183, 140, 219, 0.4)' : 'none'
-  }}
->
-  Add User
-</button>
+              <button
+                disabled={!isValid}
+                className={`px-10 py-3 text-white font-medium text-lg rounded-lg shadow-md transition-all duration-300 ${
+                  isValid ? "hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer" : "cursor-not-allowed"
+                }`}
+                style={{
+                  backgroundColor: isValid ? "rgb(183 140 219)" : "#e2e8f0",
+                  color: isValid ? "white" : colors.lightText,
+                  opacity: isValid ? 1 : 0.5,
+                  boxShadow: isValid ? "0 4px 10px rgba(183, 140, 219, 0.4)" : "none",
+                }}
+              >
+                Add User
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
