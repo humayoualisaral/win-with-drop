@@ -68,19 +68,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
 
   // Initialize the contract with the connected account
   const initializeContract = async (currentAccount, currentSigner = null) => {
-    if (!contractAddress || !currentAccount) {
-      console.error("Missing contractAddress or currentAccount");
-      return;
-    }
-    
-    if (!provider) {
-      console.error("Provider not initialized");
-      return;
-    }
+    if (!contractAddress || !currentAccount || !provider) return;
     
     try {
       setLoading(true);
-      setError(null);
       
       // Check if we're on the correct network
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
@@ -91,53 +82,35 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       
       // Get signer if not provided
       if (!currentSigner) {
-        try {
-          currentSigner = await provider.getSigner();
-          console.log("Got new signer");
-          setSigner(currentSigner);
-        } catch (signerError) {
-          console.error("Failed to get signer:", signerError);
-          setError("Failed to get wallet signer. Please reconnect your wallet.");
-          setLoading(false);
-          return;
-        }
+        currentSigner = await provider.getSigner();
+        setSigner(currentSigner);
       }
       
       // Only initialize contract if on correct network
       if (correctNetwork) {
-        try {
-          // Create contract instance with signer
-          const newContract = new ethers.Contract(
-            contractAddress,
-            MULTIGIVEAWAY_ABI, 
-            currentSigner // Use signer instead of provider for sending transactions
-          );
-          
-          console.log("Contract initialized with signer");
-          setContract(newContract);
+        // Create contract instance with signer
+        const contract = new ethers.Contract(
+          contractAddress,
+          MULTIGIVEAWAY_ABI, 
+          currentSigner // Use signer instead of provider for sending transactions
+        );
+        setContract(contract);
 
-          // Check if user is owner or admin
-          const owner = await newContract.getContractOwner();
-          setIsOwner(currentAccount.toLowerCase() === owner.toLowerCase());
-          
-          const adminStatus = await newContract.isAdmin(currentAccount);
-          setIsAdmin(adminStatus);
+        // Check if user is owner or admin
+        const owner = await contract.getContractOwner();
+        setIsOwner(currentAccount.toLowerCase() === owner.toLowerCase());
+        
+        const adminStatus = await contract.isAdmin(currentAccount);
+        setIsAdmin(adminStatus);
 
-          // Load active giveaways
-          await loadGiveaways(newContract);
-          
-        } catch (contractError) {
-          console.error("Contract initialization error:", contractError);
-          setError("Failed to initialize contract. Please check your connection and try again.");
-          setLoading(false);
-          return;
-        }
+        // Load active giveaways
+        await loadGiveaways(contract);
       }
       
       setLoading(false);
     } catch (err) {
       console.error("Contract initialization error:", err);
-      setError(err.message || "An unknown error occurred during initialization");
+      setError(err.message);
       setLoading(false);
     }
   };
@@ -159,24 +132,12 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
 
       // Request account access
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found. Please make sure your wallet is unlocked.");
-      }
-      
       const currentAccount = accounts[0];
       setAccount(currentAccount);
       
       // Set signer - make sure to await this
-      let newSigner;
-      try {
-        newSigner = await newProvider.getSigner();
-        console.log("Signer acquired successfully");
-        setSigner(newSigner);
-      } catch (signerError) {
-        console.error("Error getting signer:", signerError);
-        throw new Error("Failed to get wallet signer. Please check your wallet connection.");
-      }
+      const newSigner = await newProvider.getSigner();
+      setSigner(newSigner);
       
       // Get current chain ID and check if it's the correct network
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
@@ -201,11 +162,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       // Initialize contract with the connected account and signer
       await initializeContract(currentAccount, newSigner);
       
-      setLoading(false);
       return true;
     } catch (err) {
       console.error("Wallet connection error:", err);
-      setError(err.message || "Failed to connect wallet");
+      setError(err.message);
       setLoading(false);
       return false;
     }
@@ -223,59 +183,16 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     setError(null);
   };
 
-  // Get a valid signer and contract - helper function for contract interactions
-  const getSignerAndContract = async () => {
-    if (!contract || !signer) {
-      if (!provider) {
-        console.error("Provider not available");
-        throw new Error("Wallet not connected. Please connect your wallet.");
-      }
-      
-      try {
-        // Try to get a new signer
-        const newSigner = await provider.getSigner();
-        setSigner(newSigner);
-        
-        // Create a new contract instance
-        const newContract = new ethers.Contract(
-          contractAddress,
-          MULTIGIVEAWAY_ABI,
-          newSigner
-        );
-        
-        setContract(newContract);
-        
-        return { signer: newSigner, contract: newContract };
-      } catch (error) {
-        console.error("Failed to get signer or create contract:", error);
-        throw new Error("Wallet connection issue. Please reconnect your wallet.");
-      }
-    }
-    
-    return { signer, contract };
-  };
-
   // Load all giveaways from the contract
-  const loadGiveaways = async (contractInstance = null) => {
+  const loadGiveaways = async (contractInstance = contract) => {
+    if (!contractInstance) return;
+    
     try {
-      let targetContract = contractInstance;
-      
-      if (!targetContract) {
-        try {
-          const { contract: validContract } = await getSignerAndContract();
-          targetContract = validContract;
-        } catch (error) {
-          console.error("Failed to get valid contract:", error);
-          setError("Failed to load giveaways. Please check your connection.");
-          return;
-        }
-      }
-      
-      const giveawayCount = await targetContract.giveawayCount();
+      const giveawayCount = await contractInstance.giveawayCount();
       const loadedGiveaways = [];
       
       for (let i = 0; i < giveawayCount.toNumber(); i++) {
-        const details = await targetContract.getGiveawayDetails(i);
+        const details = await contractInstance.getGiveawayDetails(i);
         
         loadedGiveaways.push({
           id: i,
@@ -290,7 +207,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       setGiveaways(loadedGiveaways);
     } catch (err) {
       console.error("Error loading giveaways:", err);
-      setError("Failed to load giveaways: " + (err.message || "Unknown error"));
+      setError("Failed to load giveaways");
     }
   };
 
@@ -348,422 +265,293 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   };
 
   // Create a new giveaway
-  const createGiveaway = async (name) => {
-    try {
-      setError(null);
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      // Get optimal gas price based on the network
-      let gasPrice;
-      if (networkConfig.name === 'Polygon' || networkConfig.name === 'Mumbai') {
-        // For Polygon, get current gas price and increase slightly for faster confirmation
-        gasPrice = await provider.getGasPrice();
-        gasPrice = gasPrice.mul(110).div(100); // 10% increase
-      }
-      
-      console.log("Creating giveaway:", name);
-      
-      // Submit transaction
-      const tx = await validContract.createGiveaway(name, {
-        gasPrice: gasPrice // This will be undefined for networks other than Polygon
-      });
-      
-      console.log("Transaction sent:", tx.hash);
-      await tx.wait();
-      console.log("Transaction confirmed");
-      
-      // Refresh giveaways list
-      await loadGiveaways(validContract);
-      return true;
-    } catch (err) {
-      console.error("Error creating giveaway:", err);
-      setError(err.message || "Failed to create giveaway");
+// Create a new giveaway
+const createGiveaway = async (name) => {
+  try {
+    // Double check we have what we need
+    if (!contract) {
+      console.error("Contract is not initialized");
+      setError("Contract is not initialized. Please reconnect your wallet.");
       return false;
     }
-  };
+    
+    if (!signer) {
+      console.error("Signer is not available");
+      
+      // Try to get signer again if provider exists
+      if (provider) {
+        try {
+          const newSigner = await provider.getSigner();
+          setSigner(newSigner);
+          
+          // Create a new contract instance with the new signer
+          const newContract = new ethers.Contract(
+            contractAddress,
+            MULTIGIVEAWAY_ABI,
+            newSigner
+          );
+          
+          setContract(newContract);
+          
+          // Now try to create giveaway with this new contract
+          const tx = await newContract.createGiveaway(name);
+          await tx.wait();
+          await loadGiveaways();
+          return true;
+        } catch (signerError) {
+          console.error("Failed to get new signer:", signerError);
+          setError("Wallet connection issue. Please disconnect and reconnect your wallet.");
+          return false;
+        }
+      } else {
+        setError("Wallet not connected properly. Please reconnect your wallet.");
+        return false;
+      }
+    }
+    
+    // Get optimal gas price based on the network
+    let gasPrice;
+    if (networkConfig.name === 'Polygon' || networkConfig.name === 'Mumbai') {
+      // For Polygon, get current gas price and increase slightly for faster confirmation
+      gasPrice = await provider.getGasPrice();
+      gasPrice = gasPrice.mul(110).div(100); // 10% increase
+    }
+    
+    console.log("Creating giveaway with parameters:", {
+      name,
+      contractAddress,
+      signerAddress: await signer.getAddress(),
+      hasProvider: !!provider,
+      gasPrice: gasPrice ? gasPrice.toString() : undefined
+    });
+    
+    // Try the transaction
+    const tx = await contract.createGiveaway(name, {
+      gasPrice: gasPrice // This will be undefined for networks other than Polygon
+    });
+    console.log("Transaction sent:", tx.hash);
+    await tx.wait();
+    await loadGiveaways();
+    return true;
+  } catch (err) {
+    console.error("Error creating giveaway:", err);
+    setError(err.message || "Unknown error creating giveaway");
+    return false;
+  }
+};
 
   // Set giveaway active status
   const setGiveawayActive = async (giveawayId, active) => {
+    if (!contract || !signer) {
+      setError("Contract or signer not initialized");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Setting giveaway ${giveawayId} active status to ${active}`);
-      
-      // Submit transaction
-      const tx = await validContract.setGiveawayActive(giveawayId, active);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.setGiveawayActive(giveawayId, active);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
-      // Refresh giveaways list
-      await loadGiveaways(validContract);
+      await loadGiveaways();
       return true;
     } catch (err) {
       console.error("Error setting giveaway active status:", err);
-      setError(err.message || "Failed to update giveaway status");
+      setError(err.message);
       return false;
     }
   };
 
   // Add a participant to a giveaway
   const addParticipant = async (giveawayId, email) => {
+    if (!contract || !signer) {
+      setError("Contract or signer not initialized");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Adding participant to giveaway ${giveawayId}: ${email}`);
-      
-      // Submit transaction
-      const tx = await validContract.addParticipant(giveawayId, email);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.addParticipant(giveawayId, email);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
-      // Refresh giveaways list
-      await loadGiveaways(validContract);
+      await loadGiveaways();
       return true;
     } catch (err) {
       console.error("Error adding participant:", err);
-      setError(err.message || "Failed to add participant");
+      setError(err.message);
       return false;
     }
   };
 
   // Add multiple participants to a giveaway
   const batchAddParticipants = async (giveawayId, emails) => {
+    if (!contract || !signer) {
+      setError("Contract or signer not initialized");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Batch adding ${emails.length} participants to giveaway ${giveawayId}`);
-      
-      // Submit transaction
-      const tx = await validContract.batchAddParticipants(giveawayId, emails);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.batchAddParticipants(giveawayId, emails);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
-      // Refresh giveaways list
-      await loadGiveaways(validContract);
+      await loadGiveaways();
       return true;
     } catch (err) {
       console.error("Error batch adding participants:", err);
-      setError(err.message || "Failed to add participants");
+      setError(err.message);
       return false;
     }
   };
 
   // Draw a winner for a giveaway
   const drawWinner = async (giveawayId) => {
+    if (!contract || !signer) {
+      setError("Contract or signer not initialized");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Drawing winner for giveaway ${giveawayId}`);
-      
-      // Submit transaction
-      const tx = await validContract.drawWinner(giveawayId);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.drawWinner(giveawayId);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
-      // Refresh giveaways list
-      await loadGiveaways(validContract);
+      await loadGiveaways();
       return true;
     } catch (err) {
       console.error("Error drawing winner:", err);
-      setError(err.message || "Failed to draw winner");
+      setError(err.message);
       return false;
     }
   };
 
   // Get participants for a specific giveaway
   const getGiveawayParticipants = async (giveawayId) => {
+    if (!contract) return [];
+    
     try {
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return [];
-      }
-      
-      const count = await validContract.getGiveawayParticipantsCount(giveawayId);
+      const count = await contract.getGiveawayParticipantsCount(giveawayId);
       const participants = [];
       
       for (let i = 0; i < count.toNumber(); i++) {
-        const [email, hasWon] = await validContract.getGiveawayParticipant(giveawayId, i);
+        const [email, hasWon] = await contract.getGiveawayParticipant(giveawayId, i);
         participants.push({ index: i, email, hasWon });
       }
       
       return participants;
     } catch (err) {
       console.error("Error getting participants:", err);
-      setError(err.message || "Failed to get participants");
+      setError(err.message);
       return [];
     }
   };
 
   // Get the winner of a giveaway
   const getGiveawayWinner = async (giveawayId) => {
+    if (!contract) return null;
+    
     try {
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return null;
-      }
-      
-      const [email, index] = await validContract.getGiveawayWinner(giveawayId);
+      const [email, index] = await contract.getGiveawayWinner(giveawayId);
       return { email, index: index.toNumber() };
     } catch (err) {
       console.error("Error getting winner:", err);
-      setError(err.message || "Failed to get winner");
+      setError(err.message);
       return null;
     }
   };
 
   // Admin management functions
   const addAdmin = async (adminAddress) => {
+    if (!contract || !signer || !isOwner) {
+      setError("Contract not initialized or not owner");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      if (!isOwner) {
-        setError("Only the contract owner can add admins");
-        return false;
-      }
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Adding admin: ${adminAddress}`);
-      
-      // Submit transaction
-      const tx = await validContract.addAdmin(adminAddress);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.addAdmin(adminAddress);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
       return true;
     } catch (err) {
       console.error("Error adding admin:", err);
-      setError(err.message || "Failed to add admin");
+      setError(err.message);
       return false;
     }
   };
 
   const removeAdmin = async (adminAddress) => {
+    if (!contract || !signer || !isOwner) {
+      setError("Contract not initialized or not owner");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      if (!isOwner) {
-        setError("Only the contract owner can remove admins");
-        return false;
-      }
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Removing admin: ${adminAddress}`);
-      
-      // Submit transaction
-      const tx = await validContract.removeAdmin(adminAddress);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.removeAdmin(adminAddress);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
       return true;
     } catch (err) {
       console.error("Error removing admin:", err);
-      setError(err.message || "Failed to remove admin");
+      setError(err.message);
       return false;
     }
   };
 
   // VRF Configuration functions
   const setKeyHash = async (keyHash) => {
+    if (!contract || !signer || (!isOwner && !isAdmin)) {
+      setError("Contract not initialized or insufficient permissions");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      if (!isOwner && !isAdmin) {
-        setError("Only the contract owner or admins can set key hash");
-        return false;
-      }
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Setting key hash: ${keyHash}`);
-      
-      // Submit transaction
-      const tx = await validContract.setKeyHash(keyHash);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.setKeyHash(keyHash);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
       return true;
     } catch (err) {
       console.error("Error setting key hash:", err);
-      setError(err.message || "Failed to set key hash");
+      setError(err.message);
       return false;
     }
   };
 
   const setCallbackGasLimit = async (gasLimit) => {
+    if (!contract || !signer || (!isOwner && !isAdmin)) {
+      setError("Contract not initialized or insufficient permissions");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      if (!isOwner && !isAdmin) {
-        setError("Only the contract owner or admins can set callback gas limit");
-        return false;
-      }
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Setting callback gas limit: ${gasLimit}`);
-      
-      // Submit transaction
-      const tx = await validContract.setCallbackGasLimit(gasLimit);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.setCallbackGasLimit(gasLimit);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
       return true;
     } catch (err) {
       console.error("Error setting callback gas limit:", err);
-      setError(err.message || "Failed to set callback gas limit");
+      setError(err.message);
       return false;
     }
   };
 
   const setSubscriptionId = async (subscriptionId) => {
+    if (!contract || !signer || (!isOwner && !isAdmin)) {
+      setError("Contract not initialized or insufficient permissions");
+      return false;
+    }
+    
     try {
-      setError(null);
-      
-      if (!isOwner && !isAdmin) {
-        setError("Only the contract owner or admins can set subscription ID");
-        return false;
-      }
-      
-      // Get valid signer and contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return false;
-      }
-      
-      console.log(`Setting subscription ID: ${subscriptionId}`);
-      
-      // Submit transaction
-      const tx = await validContract.setSubscriptionId(subscriptionId);
-      console.log("Transaction sent:", tx.hash);
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.setSubscriptionId(subscriptionId);
       await tx.wait();
-      console.log("Transaction confirmed");
-      
       return true;
     } catch (err) {
       console.error("Error setting subscription ID:", err);
-      setError(err.message || "Failed to set subscription ID");
+      setError(err.message);
       return false;
     }
   };
 
   const getChainlinkConfig = async () => {
+    if (!contract) return null;
+    
     try {
-      // Get valid contract
-      let validContract;
-      try {
-        const { contract: contractInstance } = await getSignerAndContract();
-        validContract = contractInstance;
-      } catch (error) {
-        setError(error.message);
-        return null;
-      }
-      
-      const config = await validContract.getChainlinkConfig();
+      const config = await contract.getChainlinkConfig();
       return {
         coordinator: config.coordinator,
         subId: config.subId.toString(),
@@ -773,7 +561,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       };
     } catch (err) {
       console.error("Error getting Chainlink config:", err);
-      setError(err.message || "Failed to get Chainlink configuration");
+      setError(err.message);
       return null;
     }
   };
