@@ -18,6 +18,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   const [isOwner, setIsOwner] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState(null);
   const [giveaways, setGiveaways] = useState([]);
   const [networkConfig, setNetworkConfig] = useState(getNetworkConfig());
@@ -25,6 +26,54 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState(null);
+
+  // Check for existing connection on mount
+  useEffect(() => {
+    const checkExistingConnection = async () => {
+      setInitializing(true);
+      
+      if (window.ethereum) {
+        try {
+          // Check if there's already a connected account
+          const accounts = await window.ethereum.request({ 
+            method: 'eth_accounts' // This gets currently connected accounts without prompting
+          });
+          
+          if (accounts && accounts.length > 0) {
+            console.log("Found existing connection:", accounts[0]);
+            // There's an existing connection
+            const newProvider = new ethers.BrowserProvider(window.ethereum);
+            setProvider(newProvider);
+            setAccount(accounts[0]);
+            
+            // Get chain ID and check network
+            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            const currentChainId = parseInt(chainId, 16);
+            setChainId(currentChainId);
+            const correctNetwork = isActiveNetwork(currentChainId);
+            setIsCorrectNetwork(correctNetwork);
+            
+            try {
+              const newSigner = await newProvider.getSigner();
+              setSigner(newSigner);
+              
+              // Initialize contract with the existing connection
+              await initializeContract(accounts[0], newSigner);
+              setIsConnected(true);
+            } catch (signerError) {
+              console.error("Error getting signer from existing connection:", signerError);
+            }
+          }
+        } catch (error) {
+          console.error("Error checking existing connection:", error);
+        }
+      }
+      
+      setInitializing(false);
+    };
+
+    checkExistingConnection();
+  }, [contractAddress]); // Re-run when contract address changes
 
   // Setup listeners for account and chain changes
   useEffect(() => {
@@ -73,14 +122,23 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       return;
     }
     
-    if (!provider) {
-      console.error("Provider not initialized");
-      return;
-    }
-    
     try {
       setLoading(true);
       setError(null);
+      
+      // Set up provider if not already set
+      let currentProvider = provider;
+      if (!currentProvider && window.ethereum) {
+        currentProvider = new ethers.BrowserProvider(window.ethereum);
+        setProvider(currentProvider);
+      }
+      
+      if (!currentProvider) {
+        console.error("Provider initialization failed");
+        setError("Failed to initialize provider. Please check your connection.");
+        setLoading(false);
+        return;
+      }
       
       // Check if we're on the correct network
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
@@ -92,7 +150,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       // Get signer if not provided
       if (!currentSigner) {
         try {
-          currentSigner = await provider.getSigner();
+          currentSigner = await currentProvider.getSigner();
           console.log("Got new signer");
           setSigner(currentSigner);
         } catch (signerError) {
@@ -228,7 +286,6 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   const getSignerAndContract = async () => {
     if (!contract || !signer) {
       if (!provider) {
-        console.error("Provider not available");
         throw new Error("Wallet not connected. Please connect your wallet.");
       }
       
@@ -821,6 +878,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     isOwner,
     isAdmin,
     loading,
+    initializing,
     error,
     giveaways,
     networkConfig,

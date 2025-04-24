@@ -1,4 +1,3 @@
-// AppHeader.jsx
 "use client"
 import * as React from 'react';
 import { styled } from '@mui/material/styles';
@@ -7,6 +6,10 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import InputLabel from '@mui/material/InputLabel';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -15,7 +18,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import LogoutIcon from '@mui/icons-material/Logout';
+import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
 import { useWallet } from '@/context/WalletContext';
+import { useActiveGiveaway } from '@/context/ActiveGiveaway';
 
 const drawerWidth = 240;
 
@@ -56,9 +61,36 @@ const WalletAddressDisplay = styled('div')(({ theme }) => ({
   },
 }));
 
+const GiveawaySelector = styled(FormControl)(({ theme }) => ({
+  margin: theme.spacing(0, 2),
+  minWidth: 200,
+  '& .MuiInputBase-root': {
+    color: 'white',
+    '&:before': {
+      borderBottomColor: 'rgba(255, 255, 255, 0.7)',
+    },
+    '&:hover:not(.Mui-disabled):before': {
+      borderBottomColor: 'white',
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  '& .MuiSelect-icon': {
+    color: 'white',
+  },
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'white',
+  },
+}));
+
 const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
   const [isNavOpen, setIsNavOpen] = React.useState(true);
   const { account } = useWallet();
+  const { activeGiveaways, activeGiveaway, changeActiveGiveaway } = useActiveGiveaway();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = React.useState(false);
   
@@ -101,6 +133,15 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
       window.location.reload();
     }, 2000);
   };
+
+  // Handle giveaway selection change
+  const handleGiveawayChange = (event) => {
+    const selectedId = event.target.value;
+    const selected = activeGiveaways.find(giveaway => giveaway.id.toString() === selectedId.toString());
+    if (selected) {
+      changeActiveGiveaway(selected);
+    }
+  };
   
   return (
     <>
@@ -134,6 +175,29 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center' }}>
+            {/* Giveaway Selector Dropdown */}
+            {activeGiveaways && activeGiveaways.length > 0 && (
+              <GiveawaySelector variant="outlined" size="small">
+                <InputLabel id="active-giveaway-select-label" sx={{ color: 'white' }}>
+                  Active Giveaway
+                </InputLabel>
+                <Select
+                  labelId="active-giveaway-select-label"
+                  id="active-giveaway-select"
+                  value={activeGiveaway ? activeGiveaway.id.toString() : ''}
+                  onChange={handleGiveawayChange}
+                  label="Active Giveaway"
+                  startAdornment={<CardGiftcardIcon sx={{ mr: 1, ml: -0.5 }} />}
+                >
+                  {activeGiveaways.map((giveaway) => (
+                    <MenuItem key={giveaway.id.toString()} value={giveaway.id.toString()}>
+                      {giveaway.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </GiveawaySelector>
+            )}
+            
             {account && (
               <WalletAddressDisplay>
                 <AccountBalanceWalletIcon fontSize="small" />

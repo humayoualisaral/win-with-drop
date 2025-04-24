@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WalletProvider } from "@/context/WalletContext";
 import { MultiGiveawayProvider } from "@/context/MultiGiveawayContext";
+import { ActiveGiveawayProvider } from "@/context/ActiveGiveaway";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +46,9 @@ export default function RootLayout({ children }) {
       >
         <WalletProvider>
           <MultiGiveawayProvider contractAddress={contractAddress}>
-        {children}
+         <ActiveGiveawayProvider>
+         {children}
+         </ActiveGiveawayProvider>
           </MultiGiveawayProvider>
         </WalletProvider>
       </body>

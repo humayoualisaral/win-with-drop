@@ -73,7 +73,7 @@ const menuItems = [
 
 const Sidebar = ({ open, activeComponent, setActiveComponent }) => {
   const theme = useTheme();
-console.log(activeComponent,"this is active")
+// cosnsole.log(activeComponent,"this is active")
   return (
     <Drawer variant="permanent" open={open}>
       <div className='flex justify-between p-[20px] h-[83px]' >

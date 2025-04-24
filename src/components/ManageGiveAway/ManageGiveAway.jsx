@@ -1,7 +1,7 @@
 'use client';
 
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StateSection from '@/components/StateSection';
 
 const colors = {
@@ -34,17 +34,24 @@ export default function ManageGiveaway() {
     networkConfig
   } = useMultiGiveaway();
 
-  const handleInputChange = (e) => {
-    const input = e.target.value;
-    const isValidString = /^[A-Za-z\s]*$/.test(input);
-
-    if (isValidString || input === "") {
-      setGiveawayName(input);
-      setErrorMessage(""); // Clear error
-    } else {
-      setErrorMessage("Please use only letters and spaces to add a giveaway.");
-    }
-  };
+  // Memoize the input element to prevent recreation on every render
+  const inputElement = (
+    <input
+      key="giveaway-input"
+      type="text"
+      id="giveawayName"
+      value={giveawayName}
+      onChange={(e) => setGiveawayName(e.target.value)}
+      placeholder="Enter giveaway name"
+      className="w-full p-3 rounded-md"
+      style={{
+        backgroundColor: "#f1f5f9",
+        border: `1px solid ${colors.border}`,
+        color: colors.text,
+      }}
+      autoFocus
+    />
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,27 +74,25 @@ export default function ManageGiveaway() {
       return;
     } 
     
-    if (errorMessage === "") {
-      try {
-        setIsSubmitting(true);
-        const success = await createGiveaway(giveawayName);
-        
-        if (success) {
-          setSuccessMessage(`Giveaway "${giveawayName}" created successfully!`);
-          setGiveawayName("");
-        } else {
-          setErrorMessage("Failed to create giveaway. Please try again.");
-        }
-      } catch (err) {
-        console.error("Error creating giveaway:", err);
-        setErrorMessage(err.message || "An error occurred while creating the giveaway");
-      } finally {
-        setIsSubmitting(false);
+    try {
+      setIsSubmitting(true);
+      const success = await createGiveaway(giveawayName);
+      
+      if (success) {
+        setSuccessMessage(`Giveaway "${giveawayName}" created successfully!`);
+        setGiveawayName("");
+      } else {
+        setErrorMessage("Failed to create giveaway. Please try again.");
       }
+    } catch (err) {
+      console.error("Error creating giveaway:", err);
+      setErrorMessage(err.message || "An error occurred while creating the giveaway");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Create giveaway form component
+  // Create a memoized form that won't recreate its children on every render
   const CreateGiveawayForm = () => (
     <div
       className="w-full max-w-xl p-6 rounded-lg shadow-md"
@@ -98,19 +103,7 @@ export default function ManageGiveaway() {
           <label htmlFor="giveawayName" className="block mb-1 text-sm" style={{ color: colors.lightText }}>
             Giveaway Name
           </label>
-          <input
-            type="text"
-            id="giveawayName"
-            value={giveawayName}
-            onChange={handleInputChange}
-            placeholder="Enter giveaway name"
-            className="w-full p-3 rounded-md"
-            style={{
-              backgroundColor: "#f1f5f9",
-              border: `1px solid ${colors.border}`,
-              color: colors.text,
-            }}
-          />
+          {inputElement}
           {errorMessage && (
             <p className="mt-2 text-sm" style={{ color: colors.error }}>
               {errorMessage}

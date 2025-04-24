@@ -2,36 +2,27 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Layout from "@/components/Layout";
 import WalletValidator from "../WalletValidator";
 import AdminWalletAddressInput from "../AdminWalletValidator";
 import EndGiveaway from "../EndGiveaway";
+import { useActiveGiveaway } from "@/context/ActiveGiveaway";
 
 export default function Action() {
 
 
 
   const [activeSection, setActiveSection] = useState("addUsers");
-  const [giveaways, setGiveaways] = useState([
-    { id: 1, title: "Free Headphones Giveaway" },
-    { id: 2, title: "Amazon Gift Card $50" },
-    { id: 3, title: "Netflix Subscription for 1 Year" },
-  ]);
-  const [selectedGiveaway, setSelectedGiveaway] = useState(null);
+  const { activeGiveaways, activeGiveaway, changeActiveGiveaway } = useActiveGiveaway();
+  const prevActiveGiveawayRef = useRef(null);
 
-  const handleSelectGiveaway = (giveaway) => {
-    setSelectedGiveaway(giveaway);
-  };
-
-  const handleEndGiveaway = () => {
-    if (selectedGiveaway) {
-      setGiveaways((prev) => prev.filter((g) => g.id !== selectedGiveaway.id));
-      setSelectedGiveaway(null);
-      setActiveSection("endGiveaway"); // Show End Giveaway section when giveaway is ended
+  useEffect(() => {
+    if (activeGiveaway !== prevActiveGiveawayRef.current) {
+      console.log(activeGiveaway, "this is active");
+      prevActiveGiveawayRef.current = activeGiveaway;
     }
-  };
-
+  }, [activeGiveaway]);// Convert to string to avoid deep equality issues
   return (
     <div>
       <div className="flex space-x-2 mb-4 ml-2 mt-2 bg-gray-100 p-4">
@@ -43,7 +34,7 @@ export default function Action() {
             }`}
           style={activeSection === "addUsers" ? { backgroundColor: "rgb(234, 179, 8)", cursor: 'pointer' } : { cursor: 'pointer' }}
         >
-          Add Users
+          Add Users 
         </button>
         <button
           onClick={() => setActiveSection("addAdmins")}
