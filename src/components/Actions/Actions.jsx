@@ -19,7 +19,7 @@ export default function Action() {
 
   useEffect(() => {
     if (activeGiveaway !== prevActiveGiveawayRef.current) {
-      console.log(activeGiveaway, "this is active");
+      console.log(Number(activeGiveaway.id), "this is active");
       prevActiveGiveawayRef.current = activeGiveaway;
     }
   }, [activeGiveaway]);// Convert to string to avoid deep equality issues

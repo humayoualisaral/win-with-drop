@@ -1,12 +1,25 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
+import { useMultiGiveaway } from "@/context/MultiGiveawayContext"
+import { useActiveGiveaway } from "@/context/ActiveGiveaway"
 
 export default function EmailValidator() {
   const [input, setInput] = useState("")
   const [validationResults, setValidationResults] = useState([])
   const [isValid, setIsValid] = useState(false)
   const [highlightedText, setHighlightedText] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submissionResult, setSubmissionResult] = useState(null)
   const textareaRef = useRef(null)
+  
+  // Get the active giveaway and functions from context
+  const { batchAddParticipants, loading, error } = useMultiGiveaway()
+  
+  // Props for the active giveaway
+  const { activeGiveaway } = useActiveGiveaway()
+
+  // Maximum number of emails allowed
+  const MAX_EMAILS = 10
 
   // Color scheme
   const colors = {
@@ -80,6 +93,10 @@ export default function EmailValidator() {
       .split(",")
       .map((email) => email.trim())
       .filter((email) => email !== "")
+    
+    // Check if we exceed the maximum number of emails
+    const tooManyEmails = emails.length > MAX_EMAILS
+    
     const results = emails.map((email) => ({
       email: email,
       isValid: isValidEmail(email),
@@ -93,7 +110,11 @@ export default function EmailValidator() {
     }))
 
     setValidationResults(results)
-    setIsValid(results.length > 0 && results.every((result) => result.isValid))
+    setIsValid(
+      results.length > 0 && 
+      results.every((result) => result.isValid) && 
+      !tooManyEmails
+    )
 
     // Create highlighted version of text
     const highlighted = createHighlightedText(input, results)
@@ -126,13 +147,62 @@ export default function EmailValidator() {
 
     return email
   }
+  
+  // Add users to giveaway
+  const handleAddUsers = async () => {
+    if (!isValid || !activeGiveaway) return
+    
+    setIsSubmitting(true)
+    setSubmissionResult(null)
+    
+    try {
+      // Extract valid emails
+      const emails = validationResults
+        .filter(result => result.isValid)
+        .map(result => result.email)
+      
+      // Add participants to the active giveaway
+      const success = await batchAddParticipants(
+        Number(activeGiveaway.id), 
+        emails
+      )
+      
+      if (success) {
+        setSubmissionResult({
+          success: true,
+          message: `Successfully added ${emails.length} participant${emails.length > 1 ? 's' : ''} to the giveaway!`
+        })
+        // Clear input after successful submission
+        setInput("")
+        setValidationResults([])
+        setIsValid(false)
+        setHighlightedText("")
+      } else {
+        setSubmissionResult({
+          success: false,
+          message: error || "Failed to add participants. Please try again."
+        })
+      }
+    } catch (err) {
+      setSubmissionResult({
+        success: false,
+        message: err.message || "An error occurred while adding participants."
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
-    <div className="pt-[90px] flex items-center justify-center p-4" style={{ backgroundColor: colors.background }}>
+    <div className="flex items-center justify-center p-4" style={{ backgroundColor: colors.background }}>
       <div className="w-full max-w-6xl">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-6 border-b" style={{ borderColor: colors.primary, backgroundColor: colors.primary }}>
-            <h2 className="text-2xl font-bold text-center text-white">Enter User Emails</h2>
+            <h2 className="text-2xl font-bold text-center text-white">
+              {activeGiveaway 
+                ? `Add Participants to "${activeGiveaway.name}" Giveaway` 
+                : "Select a Giveaway to Add Participants"}
+            </h2>
           </div>
 
           <div className="p-6">
@@ -141,7 +211,7 @@ export default function EmailValidator() {
               <div className="w-full lg:w-1/2">
                 <div className="mb-4">
                   <label className="block mb-2 font-medium" style={{ color: colors.primary }} htmlFor="email-address">
-                    Enter email address(es)
+                    Enter email address(es) - maximum {MAX_EMAILS} emails
                   </label>
 
                   <div className="relative h-64 border-2 rounded-lg" style={{ borderColor: colors.primary }}>
@@ -169,11 +239,17 @@ export default function EmailValidator() {
                       onChange={(e) => setInput(e.target.value)}
                       onScroll={handleTextareaScroll}
                       placeholder="Enter email addresses separated by commas:&#10;&#10;john.doe@example.com,&#10;jane.smith@company.org,&#10;..."
+                      disabled={!activeGiveaway || isSubmitting}
                     />
                   </div>
 
                   <div className="mt-2 text-sm" style={{ color: colors.lightText }}>
-                    <p>Separate multiple email addresses with commas</p>
+                    <p>Separate multiple email addresses with commas. Maximum {MAX_EMAILS} emails allowed.</p>
+                    {validationResults.length > MAX_EMAILS && (
+                      <p className="text-red-500 font-medium mt-1">
+                        Too many emails! Please limit to {MAX_EMAILS} emails per submission.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -188,7 +264,9 @@ export default function EmailValidator() {
                     {validationResults.length > 0 && (
                       <div
                         className="px-3 py-1 rounded-full text-white text-xs font-medium"
-                        style={{ backgroundColor: isValid ? colors.success : colors.secondary }}
+                        style={{ 
+                          backgroundColor: isValid ? colors.success : colors.secondary 
+                        }}
                       >
                         {isValid ? "All Valid" : `${validationResults.filter((r) => !r.isValid).length} Invalid`}
                       </div>
@@ -228,7 +306,7 @@ export default function EmailValidator() {
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {validationResults.map((result, index) => (
+                            {validationResults.slice(0, MAX_EMAILS).map((result, index) => (
                               <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                                 <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                                   {index + 1}
@@ -266,11 +344,18 @@ export default function EmailValidator() {
                                 </td>
                               </tr>
                             ))}
+                            {validationResults.length > MAX_EMAILS && (
+                              <tr className="bg-red-50">
+                                <td colSpan="4" className="px-3 py-3 text-center text-xs text-red-500 font-medium">
+                                  Only the first {MAX_EMAILS} emails will be processed. Please remove extra emails.
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                       ) : (
                         <div className="h-full flex items-center justify-center text-gray-400 p-6">
-                          <p>Enter email addresses to see validation results</p>
+                          <p>{activeGiveaway ? "Enter email addresses to see validation results" : "Select a giveaway first"}</p>
                         </div>
                       )}
                     </div>
@@ -279,21 +364,29 @@ export default function EmailValidator() {
               </div>
             </div>
 
-            {/* Transaction Button */}
+            {/* Submission result message */}
+            {submissionResult && (
+              <div className={`my-4 p-4 rounded-lg ${submissionResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                {submissionResult.message}
+              </div>
+            )}
+
+            {/* Add Users Button */}
             <div className="flex justify-center mt-8 mb-4">
               <button
-                disabled={!isValid}
+                disabled={!isValid || !activeGiveaway || isSubmitting}
                 className={`px-10 py-3 text-white font-medium text-lg rounded-lg shadow-md transition-all duration-300 ${
-                  isValid ? "hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer" : "cursor-not-allowed"
+                  isValid && activeGiveaway && !isSubmitting ? "hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer" : "cursor-not-allowed"
                 }`}
                 style={{
-                  backgroundColor: isValid ? "rgb(183 140 219)" : "#e2e8f0",
-                  color: isValid ? "white" : colors.lightText,
-                  opacity: isValid ? 1 : 0.5,
-                  boxShadow: isValid ? "0 4px 10px rgba(183, 140, 219, 0.4)" : "none",
+                  backgroundColor: isValid && activeGiveaway && !isSubmitting ? "rgb(183 140 219)" : "#e2e8f0",
+                  color: isValid && activeGiveaway && !isSubmitting ? "white" : colors.lightText,
+                  opacity: isValid && activeGiveaway && !isSubmitting ? 1 : 0.5,
+                  boxShadow: isValid && activeGiveaway && !isSubmitting ? "0 4px 10px rgba(183, 140, 219, 0.4)" : "none",
                 }}
+                onClick={handleAddUsers}
               >
-                Add User
+                {isSubmitting ? "Adding..." : "Add Users to Giveaway"}
               </button>
             </div>
           </div>
