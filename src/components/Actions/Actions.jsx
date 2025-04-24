@@ -56,7 +56,7 @@ export default function Action() {
           Add Admins
         </button>
 
-        <button
+        {/* <button
           onClick={() => setActiveSection("endGiveaway")}
           className={`px-2 py-1 text-xs rounded transition-colors ${
             activeSection === "endGiveaway"
@@ -66,13 +66,13 @@ export default function Action() {
           style={activeSection === "endGiveaway" ? { backgroundColor: "rgb(234, 179, 8)", cursor: "pointer" } : { cursor: "pointer" }}
         >
           End Giveaway
-        </button>
+        </button> */}
     
       </div>
        {/* Conditional rendering based on the active section */}
        {activeSection === "addUsers" && <WalletValidator />}
       {activeSection === "addAdmins" && <AdminWalletAddressInput />}
-      {activeSection === "endGiveaway" && <EndGiveaway />} {/* Render EndGiveaway component when activeSection is "endGiveaway" */}
+      {/* {activeSection === "endGiveaway" && <EndGiveaway />} Render EndGiveaway component when activeSection is "endGiveaway" */}
     </div>
 
       // {activeSection === "addUsers" ? <WalletValidator /> : <AdminWalletAddressInput />}

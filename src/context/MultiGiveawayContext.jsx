@@ -119,7 +119,8 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
           // Check if user is owner or admin
           const owner = await newContract.getContractOwner();
           setIsOwner(currentAccount.toLowerCase() === owner.toLowerCase());
-          
+          console.log(currentAccount,"this is current account")
+          console.log(owner,"this is owner")
           const adminStatus = await newContract.isAdmin(currentAccount);
           setIsAdmin(adminStatus);
 
@@ -271,19 +272,21 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         }
       }
       
-      const giveawayCount = await targetContract.giveawayCount();
+      // Use the new getAllGiveaways function that returns all data at once
+      const allGiveawaysData = await targetContract.getAllGiveaways();
       const loadedGiveaways = [];
       
-      for (let i = 0; i < giveawayCount.toNumber(); i++) {
-        const details = await targetContract.getGiveawayDetails(i);
-        
+      // Destructure the array returns
+      const [ids, names, actives, completeds, participantCounts, winners] = allGiveawaysData;
+      
+      for (let i = 0; i < ids.length; i++) {
         loadedGiveaways.push({
-          id: i,
-          name: details.name,
-          active: details.active,
-          completed: details.completed,
-          totalParticipants: details.totalParticipants.toNumber(),
-          winner: details.winner
+          id: ids[i],
+          name: names[i],
+          active: actives[i],
+          completed: completeds[i],
+          totalParticipants: participantCounts[i],
+          winner: winners[i]
         });
       }
       
@@ -523,7 +526,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     }
   };
 
-  // Get participants for a specific giveaway
+  // Get participants for a specific giveaway using the new getAllParticipants function
   const getGiveawayParticipants = async (giveawayId) => {
     try {
       // Get valid signer and contract
@@ -536,12 +539,16 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return [];
       }
       
-      const count = await validContract.getGiveawayParticipantsCount(giveawayId);
-      const participants = [];
+      // Use the new getAllParticipants function
+      const [emails, hasWon] = await validContract.getAllParticipants(giveawayId);
       
-      for (let i = 0; i < count.toNumber(); i++) {
-        const [email, hasWon] = await validContract.getGiveawayParticipant(giveawayId, i);
-        participants.push({ index: i, email, hasWon });
+      const participants = [];
+      for (let i = 0; i < emails.length; i++) {
+        participants.push({
+          index: i,
+          email: emails[i],
+          hasWon: hasWon[i]
+        });
       }
       
       return participants;
@@ -570,6 +577,34 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     } catch (err) {
       console.error("Error getting winner:", err);
       setError(err.message || "Failed to get winner");
+      return null;
+    }
+  };
+
+  // Get giveaway details
+  const getGiveawayDetails = async (giveawayId) => {
+    try {
+      // Get valid signer and contract
+      let validContract;
+      try {
+        const { contract: contractInstance } = await getSignerAndContract();
+        validContract = contractInstance;
+      } catch (error) {
+        setError(error.message);
+        return null;
+      }
+      
+      const details = await validContract.getGiveawayDetails(giveawayId);
+      return {
+        name: details.name,
+        active: details.active,
+        completed: details.completed,
+        totalParticipants: details.totalParticipants.toNumber(),
+        winner: details.winner
+      };
+    } catch (err) {
+      console.error("Error getting giveaway details:", err);
+      setError(err.message || "Failed to get giveaway details");
       return null;
     }
   };
@@ -810,6 +845,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     drawWinner,
     getGiveawayParticipants,
     getGiveawayWinner,
+    getGiveawayDetails,
     
     // Admin functions
     addAdmin,

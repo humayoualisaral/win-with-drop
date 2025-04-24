@@ -7,12 +7,12 @@ import Stats from '@/components/Stats/Stats';
 import ChainLinkVRF from '@/components/ChainLinkVRF/ChainLinkVRF';
 import ManageGiveAway from '@/components/ManageGiveAway/ManageGiveAway';
 import WalletConnect from '@/components/WalletConnect';
-import { useWallet } from '@/context/WalletContext';
+import AuthCheck from '@/components/AuthCheck';
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
 
 export default function Home() {
   const [activeComponent, setActiveComponent] = useState('adminActions');
-  const { isConnected } =useMultiGiveaway();
+  const { isConnected } = useMultiGiveaway();
 
   const renderComponent = () => {
     switch (activeComponent) {
@@ -34,10 +34,12 @@ export default function Home() {
     return <WalletConnect />;
   }
 
-  // Regular app layout (only shown when wallet is connected)
+  // When wallet is connected, wrap with AuthCheck to verify admin/owner status
   return (
-    <Layout activeComponent={activeComponent} setActiveComponent={setActiveComponent}>
-      {renderComponent()}
-    </Layout>
+    <AuthCheck>
+      <Layout activeComponent={activeComponent} setActiveComponent={setActiveComponent}>
+        {renderComponent()}
+      </Layout>
+    </AuthCheck>
   );
 }
