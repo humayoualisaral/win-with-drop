@@ -6,11 +6,12 @@ import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
 const ActiveGiveawayContext = createContext();
 
 export function ActiveGiveawayProvider({ children }) {
-  const { giveaways, loadGiveaways, isConnected } = useMultiGiveaway();
+  const { giveaways, loadGiveaways, isConnected, getGiveawayDetails } = useMultiGiveaway();
   const [activeGiveaway, setActiveGiveaway] = useState(null);
   const [activeGiveawayId, setActiveGiveawayId] = useState(null);
   const [activeGiveawayDetails, setActiveGiveawayDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [allGiveaways, setAllGiveaways] = useState([]); // New state for all giveaways
 
   // Get active giveaways from the list of all giveaways
   const activeGiveaways = giveaways.filter(giveaway => giveaway.active && !giveaway.completed);
@@ -21,6 +22,11 @@ export function ActiveGiveawayProvider({ children }) {
       loadGiveaways();
     }
   }, [isConnected, loadGiveaways]);
+
+  // Set all giveaways when giveaways changes
+  useEffect(() => {
+    setAllGiveaways(giveaways);
+  }, [giveaways]);
 
   // Set first active giveaway as default when activeGiveaways changes and no active giveaway is selected
   useEffect(() => {
@@ -43,7 +49,6 @@ export function ActiveGiveawayProvider({ children }) {
 
     try {
       setLoading(true);
-      const { getGiveawayDetails } = useMultiGiveaway();
       const details = await getGiveawayDetails(activeGiveawayId);
       setActiveGiveawayDetails(details);
     } catch (error) {
@@ -63,6 +68,7 @@ export function ActiveGiveawayProvider({ children }) {
   // Context value
   const contextValue = {
     activeGiveaways,
+    allGiveaways, // Add all giveaways to the context value
     activeGiveaway,
     activeGiveawayId,
     activeGiveawayDetails,

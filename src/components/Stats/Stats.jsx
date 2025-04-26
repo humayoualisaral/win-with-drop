@@ -1,19 +1,25 @@
 'use client'
 
+import {useEffect } from "react";
 import StatCards from "../StatCards";
-import StatsSection from "../StateSection";
 // import CountdownTimer from "../Timer";
 import DataTable from "../UsersTable";
+import { useActiveGiveaway } from "@/context/ActiveGiveaway";
 
 
-const stats = [
-  { title: "Total Users", value: "100,000,000" },
-  { title: "Owner Address", value: "0x0000000000000000000" },
-  { title: "Winner Email Address", value: "xyz111@gmail.com" },
-];
 
 
 export default function Stats() {
+  const { activeGiveaways, activeGiveaway, changeActiveGiveaway } = useActiveGiveaway();
+  const stats = [
+    { title: "Giveaway Name", value: activeGiveaway.name },
+    { title: "Giveaway Id", value: activeGiveaway.id },
+    { title: "Total Participants", value: activeGiveaway.totalParticipants },
+    { title: "Winner Email Address", value: activeGiveaway.winner?activeGiveaway.winner:"Pending" },
+  ];
+useEffect(()=>{
+  console.log("this is active",activeGiveaway)
+},[activeGiveaway])
   return (
     <div className="mt-15">
       {/* <div className="w-full flex justify-end   mt-15">
@@ -24,10 +30,8 @@ export default function Stats() {
       </div> */}
       <StatCards stats={stats} />
       <div className="pt-[30px]">
-        <DataTable />
+        <DataTable giveawayId={activeGiveaway.id.toString()} />
       </div>
-      <StatsSection />
-
     </div>
   );
 }

@@ -32,7 +32,7 @@ export default function EmailValidator() {
     text: "#0f172a", // Slate-900 - deeper text for better readability
     lightText: "#64748b", // Slate-500 - softer secondary text
     border: "#e2e8f0", // Subtle border color
-    highlight: "rgb(255 221 96)", // Very light blue for highlights
+    highlight: "rgb(234 179 8 / 18%)", // Very light blue for highlights
   }
 
   // Function to validate a single email address
@@ -148,9 +148,12 @@ export default function EmailValidator() {
     return email
   }
   
+  // Check if the giveaway is active
+  const isGiveawayActive = activeGiveaway && activeGiveaway.active === true
+  
   // Add users to giveaway
   const handleAddUsers = async () => {
-    if (!isValid || !activeGiveaway) return
+    if (!isValid || !activeGiveaway || !isGiveawayActive) return
     
     setIsSubmitting(true)
     setSubmissionResult(null)
@@ -200,12 +203,19 @@ export default function EmailValidator() {
           <div className="p-6 border-b" style={{ borderColor: colors.primary, backgroundColor: colors.primary }}>
             <h2 className="text-2xl font-bold text-center text-white">
               {activeGiveaway 
-                ? `Add Participants to "${activeGiveaway.name}" Giveaway` 
+                ? `Add Participants to (${activeGiveaway.name})` 
                 : "Select a Giveaway to Add Participants"}
             </h2>
           </div>
 
           <div className="p-6">
+            {/* Display inactive giveaway message */}
+            {activeGiveaway && !isGiveawayActive && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-center font-medium">
+                Giveaway is not active
+              </div>
+            )}
+            
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Left column - Text Area */}
               <div className="w-full lg:w-1/2">
@@ -239,7 +249,7 @@ export default function EmailValidator() {
                       onChange={(e) => setInput(e.target.value)}
                       onScroll={handleTextareaScroll}
                       placeholder="Enter email addresses separated by commas:&#10;&#10;john.doe@example.com,&#10;jane.smith@company.org,&#10;..."
-                      disabled={!activeGiveaway || isSubmitting}
+                      disabled={!activeGiveaway || !isGiveawayActive || isSubmitting}
                     />
                   </div>
 
@@ -355,7 +365,13 @@ export default function EmailValidator() {
                         </table>
                       ) : (
                         <div className="h-full flex items-center justify-center text-gray-400 p-6">
-                          <p>{activeGiveaway ? "Enter email addresses to see validation results" : "Select a giveaway first"}</p>
+                          <p>
+                            {!activeGiveaway 
+                              ? "Select a giveaway first" 
+                              : !isGiveawayActive
+                                ? "Giveaway is not active" 
+                                : "Enter email addresses to see validation results"}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -374,15 +390,15 @@ export default function EmailValidator() {
             {/* Add Users Button */}
             <div className="flex justify-center mt-8 mb-4">
               <button
-                disabled={!isValid || !activeGiveaway || isSubmitting}
+                disabled={!isValid || !activeGiveaway || !isGiveawayActive || isSubmitting}
                 className={`px-10 py-3 text-white font-medium text-lg rounded-lg shadow-md transition-all duration-300 ${
-                  isValid && activeGiveaway && !isSubmitting ? "hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer" : "cursor-not-allowed"
+                  isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer" : "cursor-not-allowed"
                 }`}
                 style={{
-                  backgroundColor: isValid && activeGiveaway && !isSubmitting ? "rgb(183 140 219)" : "#e2e8f0",
-                  color: isValid && activeGiveaway && !isSubmitting ? "white" : colors.lightText,
-                  opacity: isValid && activeGiveaway && !isSubmitting ? 1 : 0.5,
-                  boxShadow: isValid && activeGiveaway && !isSubmitting ? "0 4px 10px rgba(183, 140, 219, 0.4)" : "none",
+                  backgroundColor: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "#513763" : "#e2e8f0",
+                  color: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "white" : colors.lightText,
+                  opacity: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? 1 : 0.5,
+                  boxShadow: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "0 4px 10px rgba(183, 140, 219, 0.4)" : "none",
                 }}
                 onClick={handleAddUsers}
               >

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
+import { useActiveGiveaway } from '@/context/ActiveGiveaway';
 
 const colors = {
   primary: "#000",
@@ -13,23 +15,64 @@ const colors = {
   lightText: "#64748b",
   border: "#e2e8f0",
   highlight: "rgb(255 221 96)",
+  disabled: "#cbd5e1", // Light gray for disabled state
 };
 
-const initialGiveaways = [
-  { id: 1, title: 'Free Headphones', status: 'Ongoing' },
-  { id: 2, title: 'Amazon Gift Card', status: 'Ongoing' },
-  { id: 3, title: 'Netflix Subscription', status: 'Ended' },
-];
-
 export default function StatsSection() {
-  const [giveaways, setGiveaways] = useState(initialGiveaways);
+  const { drawWinner, loading: contractLoading, error: contractError } = useMultiGiveaway();
+  const { activeGiveaways, loading: giveawaysLoading } = useActiveGiveaway();
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isDrawingWinner, setIsDrawingWinner] = useState(false);
+  const [drawingId, setDrawingId] = useState(null);
+  const itemsPerPage = 5;
+  
+  // Calculate pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentGiveaways = activeGiveaways.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(activeGiveaways.length / itemsPerPage);
+  
+  // Reset to first page when activeGiveaways changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeGiveaways.length]);
 
-  const handleEndGiveaway = (id) => {
-    const updated = giveaways.map(g =>
-      g.id === id ? { ...g, status: 'Ended' } : g
-    );
-    setGiveaways(updated);
+  const handleDrawWinner = async (giveawayId) => {
+    setIsDrawingWinner(true);
+    setDrawingId(giveawayId);
+    
+    try {
+      await drawWinner(giveawayId);
+      // The context should update automatically via contract events
+    } catch (err) {
+      console.error("Error drawing winner:", err);
+    } finally {
+      setIsDrawingWinner(false);
+      setDrawingId(null);
+    }
   };
+
+  // Pagination controls
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Check if drawing is possible (needs more than 1 participant)
+  const canDrawWinner = (giveaway) => {
+    return giveaway.totalParticipants > 1;
+  };
+
+  // Loading state
+  const isLoading = giveawaysLoading || contractLoading;
 
   return (
     <section
@@ -37,44 +80,92 @@ export default function StatsSection() {
       style={{ color: colors.text }}
     >
       <div className="max-w-4xl mx-auto space-y-6">
-        <h2 className="text-3xl font-bold text-center mb-6">Giveaway Stats</h2>
+        <h2 className="text-3xl font-bold text-center mb-6">Active Giveaways</h2>
 
-        {giveaways.map((giveaway) => (
-          <div
-            key={giveaway.id}
-            className="flex items-center justify-between p-4 rounded-lg shadow-md"
-            style={{
-              backgroundColor: colors.card,
-              border: `1px solid ${colors.border}`,
-            }}
-          >
-            <div>
-              <h3 className="font-semibold text-lg">{giveaway.title}</h3>
-              <p
-                className="text-sm mt-1"
+        {isLoading && <p className="text-center py-4">Loading giveaways...</p>}
+        
+        {contractError && (
+          <div className="p-4 rounded-lg bg-red-100 text-red-700 border border-red-300">
+            {contractError}
+          </div>
+        )}
+
+        {!isLoading && activeGiveaways.length === 0 && (
+          <p className="text-center py-8">No active giveaways found.</p>
+        )}
+
+        {!isLoading && activeGiveaways.length > 0 && (
+          <>
+            {currentGiveaways.map((giveaway) => (
+              <div
+                key={giveaway.id.toString()}
+                className="flex items-center justify-between p-4 rounded-lg shadow-md"
                 style={{
-                  color:
-                    giveaway.status === 'Ongoing'
-                      ? colors.secondary
-                      : colors.error,
-                  fontWeight: 'bold',
+                  backgroundColor: colors.card,
+                  border: `1px solid ${colors.border}`,
                 }}
               >
-                {giveaway.status}
-              </p>
-            </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{giveaway.name}</h3>
+                  <p className="text-sm mt-1" style={{ color: colors.secondary, fontWeight: 'bold' }}>
+                    {giveaway.totalParticipants} participant{giveaway.totalParticipants !== 1 ? 's' : ''}
+                  </p>
+                </div>
 
-            {giveaway.status === 'Ongoing' && (
-              <button
-                onClick={() => handleEndGiveaway(giveaway.id)}
-                className="px-4 py-2 text-white rounded-md font-semibold"
-                style={{ backgroundColor: colors.error }}
-              >
-                End
-              </button>
+                <button
+                  onClick={() => handleDrawWinner(giveaway.id)}
+                  disabled={isDrawingWinner || !canDrawWinner(giveaway)}
+                  className="px-4 py-2 text-white rounded-md font-semibold transition-colors"
+                  style={{ 
+                    backgroundColor: 
+                      isDrawingWinner && drawingId === giveaway.id ? colors.lightText :
+                      !canDrawWinner(giveaway) ? colors.disabled : 
+                      colors.success,
+                    cursor: isDrawingWinner || !canDrawWinner(giveaway) ? 'not-allowed' : 'pointer'
+                  }}
+                  title={!canDrawWinner(giveaway) ? "Need at least 2 participants to draw a winner" : ""}
+                >
+                  {isDrawingWinner && drawingId === giveaway.id ? 'Drawing...' : 'Draw Winner'}
+                </button>
+              </div>
+            ))}
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center space-x-4 mt-6">
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 rounded"
+                  style={{
+                    backgroundColor: currentPage === 1 ? colors.border : colors.secondary,
+                    color: currentPage === 1 ? colors.lightText : 'white',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Previous
+                </button>
+                
+                <span>
+                  Page {currentPage} of {totalPages}
+                </span>
+                
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 rounded"
+                  style={{
+                    backgroundColor: currentPage === totalPages ? colors.border : colors.secondary,
+                    color: currentPage === totalPages ? colors.lightText : 'white',
+                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Next
+                </button>
+              </div>
             )}
-          </div>
-        ))}
+          </>
+        )}
       </div>
     </section>
   );

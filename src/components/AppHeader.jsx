@@ -90,7 +90,7 @@ const GiveawaySelector = styled(FormControl)(({ theme }) => ({
 const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
   const [isNavOpen, setIsNavOpen] = React.useState(true);
   const { account } = useWallet();
-  const { activeGiveaways, activeGiveaway, changeActiveGiveaway } = useActiveGiveaway();
+  const { allGiveaways, activeGiveaway, changeActiveGiveaway } = useActiveGiveaway();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = React.useState(false);
   
@@ -137,7 +137,7 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
   // Handle giveaway selection change
   const handleGiveawayChange = (event) => {
     const selectedId = event.target.value;
-    const selected = activeGiveaways.find(giveaway => giveaway.id.toString() === selectedId.toString());
+    const selected = allGiveaways.find(giveaway => giveaway.id.toString() === selectedId.toString());
     if (selected) {
       changeActiveGiveaway(selected);
     }
@@ -150,7 +150,7 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
         open={open} 
         sx={[
           {
-            background: "rgb(183 140 219)"
+            background: "#513763"
           }
         ]}
       >
@@ -176,22 +176,22 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
           
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {/* Giveaway Selector Dropdown */}
-            {activeGiveaways && activeGiveaways.length > 0 && (
+            {allGiveaways && allGiveaways.length > 0 && (
               <GiveawaySelector variant="outlined" size="small">
                 <InputLabel id="active-giveaway-select-label" sx={{ color: 'white' }}>
-                  Active Giveaway
+                  Select Giveaway
                 </InputLabel>
                 <Select
                   labelId="active-giveaway-select-label"
                   id="active-giveaway-select"
                   value={activeGiveaway ? activeGiveaway.id.toString() : ''}
                   onChange={handleGiveawayChange}
-                  label="Active Giveaway"
+                  label="Select Giveaway"
                   startAdornment={<CardGiftcardIcon sx={{ mr: 1, ml: -0.5 }} />}
                 >
-                  {activeGiveaways.map((giveaway) => (
+                  {allGiveaways.map((giveaway) => (
                     <MenuItem key={giveaway.id.toString()} value={giveaway.id.toString()}>
-                      {giveaway.name}
+                      {giveaway.name} {giveaway.active ? "(Active)" : "(Inactive)"}
                     </MenuItem>
                   ))}
                 </Select>
@@ -206,22 +206,6 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
                 </Typography>
               </WalletAddressDisplay>
             )}
-            
-            {/* <Button
-              variant="contained"
-              color="error"
-              size="small"
-              startIcon={<LogoutIcon />}
-              onClick={handleOpenDialog}
-              sx={{
-                backgroundColor: 'rgba(211, 47, 47, 0.8)',
-                '&:hover': {
-                  backgroundColor: 'rgba(211, 47, 47, 1)',
-                },
-              }}
-            >
-              Disconnect
-            </Button> */}
           </div>
         </Toolbar>
       </AppBar>

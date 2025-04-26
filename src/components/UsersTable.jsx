@@ -1,140 +1,298 @@
 import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Chip from '@mui/material/Chip';
+import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
+import { 
+  Badge, 
+  Card, 
+  CardHeader, 
+  Divider, 
+  IconButton, 
+  Tooltip 
+} from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import PersonIcon from '@mui/icons-material/Person';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
-const columns = [
-  { 
-    field: 'txId', 
-    headerName: 'Transaction ID', 
-    width: 220,
-    renderCell: (params) => (
-      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-        {params.value}
-      </Typography>
-    )
-  },
-  { 
-    field: 'adminAddress', 
-    headerName: 'Admin Address', 
-    width: 200,
-    renderCell: (params) => (
-      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-        {params.value}
-      </Typography>
-    )
-  },
-  { 
-    field: 'userEmailAddress', 
-    headerName: 'User Email Address', 
-    width: 200,
-    renderCell: (params) => (
-      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-        {params.value}
-      </Typography>
-    )
-  },
-  {
-    field: 'timestamp',
-    headerName: 'Timestamp',
-    width: 180,
-  },
-];
+export default function ParticipantsTable({ giveawayId }) {
+  const [participants, setParticipants] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+  const { getGiveawayParticipants } = useMultiGiveaway();
+  const [totalParticipants, setTotalParticipants] = React.useState(0);
+  const [totalWinners, setTotalWinners] = React.useState(0);
 
-// Blockchain-style dummy data
-const rows = [
-  { 
-    id: 1, 
-    txId: '0x7ac43aa8d4d969d065a39e2853cb78956f464f26e936c9fae7f3ec36295a4157', 
-    adminAddress: '0x23F8C8e516592977765d02d09AE1f2c7E9db08d3', 
-    userEmailAddress: 'ali22@gmail.com', 
-    timestamp: '2025-04-20 09:12:33'
-  },
-  { 
-    id: 2, 
-    txId: '0x5db28b613c616f833c5cc9f1d85210fb71c9c23ca3a00ce2abe8aa98323800dd', 
-    adminAddress: '0x23F8C8e516592977765d02d09AE1f2c7E9db08d3', 
-    userEmailAddress: 'aaaa33@gmail.com', 
-    timestamp: '2025-04-20 08:45:17'
-  },
-  { 
-    id: 3, 
-    txId: '0x99c5c78d72e374cf48f36d32a6cc9beebdea09fba92fd05451c2c5f9c2cd69a1', 
-    adminAddress: '0x3e2A8FFc7BdA3460769Ce076c4236b1876FdA218', 
-    userEmailAddress: 'hhhh44@gmail.com', 
-    timestamp: '2025-04-19 23:01:48'
-  },
-  { 
-    id: 4, 
-    txId: '0x1b76cf350401b2ffc8a7abf63e17993a5a0458d904d65421eb8a4c8ecfc9a1dc', 
-    adminAddress: '0x23F8C8e516592977765d02d09AE1f2c7E9db08d3', 
-    userEmailAddress: 'aftab555@gmail.com', 
-    timestamp: '2025-04-19 20:33:12'
-  },
-  { 
-    id: 5, 
-    txId: '0xc8f18a271a069b8c719460eff3c9818d9bfb4e3774991286afc5b350d9dd4367', 
-    adminAddress: '0x3e2A8FFc7BdA3460769Ce076c4236b1876FdA218', 
-    userEmailAddress: 'abc222@gmail.com', 
-    timestamp: '2025-04-19 16:27:54'
-  },
-  { 
-    id: 6, 
-    txId: '0xf26d9eee53f3db81bef796a53b30331c0b9512051c9a2b81fc3fd12422a97a2c', 
-    adminAddress: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc', 
-    userEmailAddress: 'humayon11@gamil.com', 
-    timestamp: '2025-04-19 12:18:09'
-  },
-  { 
-    id: 7, 
-    txId: '0x8adeec79d06a42b2640f12b44167ce8910dcee48ecd50d9d02ea019c82c783c3', 
-    adminAddress: '0x23F8C8e516592977765d02d09AE1f2c7E9db08d3', 
-    userEmailAddress: 'saleem33@gmail.com', 
-    timestamp: '2025-04-19 09:05:23'
-  },
-  { 
-    id: 8, 
-    txId: '0x3ad8dcf7e6fb13c1c187628b1b74726caa070c92e0bc8318edc65e07aad93d31', 
-    adminAddress: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc', 
-    userEmailAddress: 'ahmed22@gmail.com', 
-    timestamp: '2025-04-18 23:42:18'
-  },
-  { 
-    id: 9, 
-    txId: '0x61e9dc5a8847a5fe8dc49ba12ed0c8e7bfc75d5c7c1eec3fef0c2c3fa09bb9b3', 
-    adminAddress: '0x3e2A8FFc7BdA3460769Ce076c4236b1876FdA218', 
-    userEmailAddress: 'xyz55@gmail.com', 
-    timestamp: '2025-04-18 16:59:54'
-  },
-];
-
-export default function BlockchainTransactionsTable() {
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
-    pageSize: 5,
+    pageSize: 10,
   });
 
-  return (
-    <Paper elevation={3}>
-      <Box p={2}>
-        {/* Custom Header */}
-        <Typography variant="h6" gutterBottom>
-          BLOCKCHAIN TRANSACTIONS
+  // Define columns for the DataGrid with enhanced styling
+  const columns = [
+    { 
+      field: 'index', 
+      headerName: 'ID', 
+      width: 80,
+      headerAlign: 'center',
+      align: 'center',
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontFamily: 'monospace',
+            backgroundColor: '#f0f2f5',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold'
+          }}
+        >
+          #{params.value + 1}
         </Typography>
+      )
+    },
+    { 
+      field: 'email', 
+      headerName: 'Email Address', 
+      flex: 1,
+      minWidth: 250,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <PersonIcon sx={{ color: '#64748b', mr: 1, fontSize: 18 }} />
+          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+            {params.value}
+          </Typography>
+        </Box>
+      )
+    },
+    { 
+      field: 'hasWon', 
+      headerName: 'Status', 
+      width: 150,
+      headerAlign: 'center',
+      align: 'center',
+      renderCell: (params) => (
+        params.value ? (
+          <Chip 
+            icon={<EmojiEventsIcon />} 
+            label="Winner" 
+            color="primary" 
+            variant="outlined"
+            sx={{ 
+              fontWeight: 'bold',
+              backgroundColor: 'rgba(46, 204, 113, 0.1)',
+              borderColor: 'rgba(46, 204, 113, 0.5)',
+              color: '#2ecc71',
+              '& .MuiChip-icon': { color: '#2ecc71' }
+            }}
+          />
+        ) : (
+          <Chip 
+            label="Participant" 
+            variant="outlined"
+            sx={{ 
+              color: '#64748b',
+              borderColor: '#cbd5e1'
+            }}
+          />
+        )
+      )
+    },
+  ];
+
+  // Fetch participants data when component mounts or giveawayId changes
+  React.useEffect(() => {
+    const fetchParticipants = async () => {
+      if (!giveawayId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Call the contract method to get participants
+        const participantsData = await getGiveawayParticipants(giveawayId);
+        
+        // Format data for the DataGrid
+        const formattedData = participantsData.map(participant => ({
+          id: participant.index,
+          ...participant
+        }));
+        console.log(participantsData,"this is data")
+        console.log(giveawayId,)
+        setParticipants(formattedData);
+        setTotalParticipants(formattedData.length);
+        setTotalWinners(formattedData.filter(p => p.hasWon).length);
+      } catch (err) {
+        console.error("Error fetching participants:", err);
+        setError(`Failed to load participants: ${err.message || "Unknown error"}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchParticipants();
+    // Only depend on giveawayId to prevent reload loops
+  }, [giveawayId]);
+
+  // Manual refresh function - separate from the effect
+  const handleRefresh = async () => {
+    if (!giveawayId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const participantsData = await getGiveawayParticipants(giveawayId);
+      
+      const formattedData = participantsData.map(participant => ({
+        id: participant.index,
+        ...participant
+      }));
+      
+      setParticipants(formattedData);
+      setTotalParticipants(formattedData.length);
+      setTotalWinners(formattedData.filter(p => p.hasWon).length);
+    } catch (err) {
+      console.error("Error fetching participants:", err);
+      setError(`Failed to load participants: ${err.message || "Unknown error"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card elevation={2} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+      <CardHeader
+        title={
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+              Giveaway Participants
+            </Typography>
+            <Chip 
+              label={`#${giveawayId}`} 
+              size="small" 
+              sx={{ ml: 1, backgroundColor: '#f0f2f5', fontWeight: 'bold' }} 
+            />
+          </Box>
+        }
+        action={
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Badge 
+              badgeContent={totalWinners} 
+              color="primary" 
+              sx={{ mr: 2 }}
+              max={999}
+            >
+              <Tooltip title="Total Winners">
+                <EmojiEventsIcon sx={{ color: '#2ecc71' }} />
+              </Tooltip>
+            </Badge>
+            <Badge 
+              badgeContent={totalParticipants} 
+              color="default" 
+              sx={{ mr: 2 }}
+              max={999}
+            >
+              <Tooltip title="Total Participants">
+                <PersonIcon sx={{ color: '#64748b' }} />
+              </Tooltip>
+            </Badge>
+            <Tooltip title="Refresh Data">
+              <IconButton onClick={handleRefresh} disabled={loading} size="small">
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        }
+        sx={{ 
+          backgroundColor: '#f8fafc',
+          borderBottom: '1px solid #e2e8f0',
+          pb: 1
+        }}
+      />
+      
+      <Divider />
+      
+      <Box sx={{ p: 0 }}>
+        {/* Loading indicator */}
+        {loading && (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+            <CircularProgress size={40} thickness={4} />
+          </Box>
+        )}
+        
+        {/* Error message */}
+        {error && (
+          <Box p={2}>
+            <Alert 
+              severity="error" 
+              variant="outlined"
+              sx={{ borderRadius: 1 }}
+            >
+              {error}
+            </Alert>
+          </Box>
+        )}
+        
+        {/* Empty state */}
+        {!loading && participants.length === 0 && !error && (
+          <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p={4} minHeight={200}>
+            <PersonIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
+            <Typography variant="body1" color="text.secondary">
+              No participants found for this giveaway.
+            </Typography>
+          </Box>
+        )}
         
         {/* DataGrid */}
-        <Box sx={{ height: 400, width: '100%' }}>
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            pageSizeOptions={[5, 10]}
-            disableRowSelectionOnClick
-          />
-        </Box>
+        {!loading && participants.length > 0 && (
+          <Box sx={{ height: 500, width: '100%' }}>
+            <DataGrid
+              rows={participants}
+              columns={columns}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[10, 25, 50, 100]}
+              disableRowSelectionOnClick
+              getRowClassName={(params) => 
+                params.row.hasWon ? 'winner-row' : ''
+              }
+              sx={{
+                '& .winner-row': {
+                  backgroundColor: 'rgba(46, 204, 113, 0.05)',
+                },
+                '& .MuiDataGrid-cell:focus': {
+                  outline: 'none'
+                },
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: '#f8fafc',
+                  borderBottom: '1px solid #e2e8f0',
+                },
+                '& .MuiDataGrid-footerContainer': {
+                  backgroundColor: '#f8fafc',
+                  borderTop: '1px solid #e2e8f0',
+                },
+                border: 'none',
+                '& .MuiDataGrid-withBorderColor': {
+                  borderColor: '#e2e8f0',
+                },
+                '& .MuiDataGrid-row:hover': {
+                  backgroundColor: '#f1f5f9',
+                },
+                '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-cell:focus': {
+                  outline: 'none',
+                }
+              }}
+            />
+          </Box>
+        )}
       </Box>
-    </Paper>
+    </Card>
   );
 }

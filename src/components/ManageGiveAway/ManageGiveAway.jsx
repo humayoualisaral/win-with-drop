@@ -1,7 +1,7 @@
 'use client';
 
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import StateSection from '@/components/StateSection';
 
 const colors = {
@@ -16,6 +16,71 @@ const colors = {
   border: "#e2e8f0",
   highlight: "rgb(255 221 96)",
 };
+
+// Define CreateGiveawayForm outside the main component
+const CreateGiveawayForm = ({ 
+  handleSubmit, 
+  giveawayName, 
+  setGiveawayName, 
+  errorMessage, 
+  successMessage, 
+  error, 
+  isSubmitting 
+}) => (
+  <div
+    className="w-full max-w-xl p-6 rounded-lg shadow-md"
+    style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}
+  >
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="giveawayName" className="block mb-1 text-sm" style={{ color: colors.lightText }}>
+          Giveaway Name
+        </label>
+        <input
+          type="text"
+          id="giveawayName"
+          value={giveawayName}
+          onChange={(e) => setGiveawayName(e.target.value)}
+          placeholder="Enter giveaway name"
+          className="w-full p-3 rounded-md"
+          style={{
+            backgroundColor: "#f1f5f9",
+            border: `1px solid ${colors.border}`,
+            color: colors.text,
+          }}
+          autoFocus
+        />
+        {errorMessage && (
+          <p className="mt-2 text-sm" style={{ color: colors.error }}>
+            {errorMessage}
+          </p>
+        )}
+        {successMessage && (
+          <p className="mt-2 text-sm" style={{ color: 'green' }}>
+            {successMessage}
+          </p>
+        )}
+        {error && (
+          <p className="mt-2 text-sm" style={{ color: colors.error }}>
+            {error}
+          </p>
+        )}
+      </div>
+
+      <button
+        type="submit"
+        className="px-4 py-2 rounded text-white font-semibold"
+        style={{ 
+          backgroundColor: isSubmitting ? colors.lightText : colors.success,
+          cursor: isSubmitting ? 'not-allowed' : 'pointer'
+        }}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Creating...' : 'Submit Giveaway'}
+      </button>
+    </form>
+  </div>
+);
 
 export default function ManageGiveaway() {
   const [activeSection, setActiveSection] = useState("createGiveaway");
@@ -34,54 +99,43 @@ export default function ManageGiveaway() {
     networkConfig
   } = useMultiGiveaway();
 
-  // Memoize the input element to prevent recreation on every render
-  const inputElement = (
-    <input
-      key="giveaway-input"
-      type="text"
-      id="giveawayName"
-      value={giveawayName}
-      onChange={(e) => setGiveawayName(e.target.value)}
-      placeholder="Enter giveaway name"
-      className="w-full p-3 rounded-md"
-      style={{
-        backgroundColor: "#f1f5f9",
-        border: `1px solid ${colors.border}`,
-        color: colors.text,
-      }}
-      autoFocus
-    />
-  );
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Form submitted"); // Debug log
     setSuccessMessage('');
+    setErrorMessage('');
     
     // Check if wallet is connected
     if (!isConnected) {
+      console.log("Wallet not connected"); // Debug log
       setErrorMessage("Please connect your wallet first.");
       return;
     }
     
     // Check if on correct network
     if (!isCorrectNetwork) {
+      console.log("Not on correct network"); // Debug log
       setErrorMessage(`Please switch to ${networkConfig.name} network.`);
       return;
     }
     
     if (giveawayName.trim() === "") {
+      console.log("Empty giveaway name"); // Debug log
       setErrorMessage("Giveaway name cannot be empty.");
       return;
     } 
     
     try {
       setIsSubmitting(true);
+      console.log("Attempting to create giveaway:", giveawayName); // Debug log
       const success = await createGiveaway(giveawayName);
       
       if (success) {
+        console.log("Giveaway created successfully"); // Debug log
         setSuccessMessage(`Giveaway "${giveawayName}" created successfully!`);
         setGiveawayName("");
       } else {
+        console.log("Failed to create giveaway"); // Debug log
         setErrorMessage("Failed to create giveaway. Please try again.");
       }
     } catch (err) {
@@ -92,53 +146,9 @@ export default function ManageGiveaway() {
     }
   };
 
-  // Create a memoized form that won't recreate its children on every render
-  const CreateGiveawayForm = () => (
-    <div
-      className="w-full max-w-xl p-6 rounded-lg shadow-md"
-      style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="giveawayName" className="block mb-1 text-sm" style={{ color: colors.lightText }}>
-            Giveaway Name
-          </label>
-          {inputElement}
-          {errorMessage && (
-            <p className="mt-2 text-sm" style={{ color: colors.error }}>
-              {errorMessage}
-            </p>
-          )}
-          {successMessage && (
-            <p className="mt-2 text-sm" style={{ color: 'green' }}>
-              {successMessage}
-            </p>
-          )}
-          {error && (
-            <p className="mt-2 text-sm" style={{ color: colors.error }}>
-              {error}
-            </p>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          className="px-4 py-2 rounded text-white font-semibold"
-          style={{ 
-            backgroundColor: isSubmitting ? colors.lightText : colors.success,
-            cursor: isSubmitting ? 'not-allowed' : 'pointer'
-          }}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Creating...' : 'Submit Giveaway'}
-        </button>
-      </form>
-    </div>
-  );
-
   return (
     <div style={{ backgroundColor: colors.background, color: colors.text }}>
-      {/* Tab Navigation - Exactly like in Action component */}
+      {/* Tab Navigation */}
       <div className="flex space-x-2 mb-4 ml-2 mt-2 bg-gray-100 p-4">
         <button
           onClick={() => setActiveSection("createGiveaway")}
@@ -185,8 +195,18 @@ export default function ManageGiveaway() {
         </div>
       ) : (
         <>
-          {/* Content based on active section - Now exactly like Action component */}
-          {activeSection === "createGiveaway" && <CreateGiveawayForm />}
+          {/* Content based on active section */}
+          {activeSection === "createGiveaway" && (
+            <CreateGiveawayForm
+              handleSubmit={handleSubmit}
+              giveawayName={giveawayName}
+              setGiveawayName={setGiveawayName}
+              errorMessage={errorMessage}
+              successMessage={successMessage}
+              error={error}
+              isSubmitting={isSubmitting}
+            />
+          )}
           {activeSection === "currentGiveaways" && <StateSection />}
         </>
       )}
