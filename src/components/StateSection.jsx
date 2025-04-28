@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
 import { useActiveGiveaway } from '@/context/ActiveGiveaway';
+import { useTransaction } from '@/context/TransactionContext';
 
 const colors = {
   primary: "#000",
@@ -21,10 +22,13 @@ const colors = {
 export default function StatsSection() {
   const { drawWinner, loading: contractLoading, error: contractError } = useMultiGiveaway();
   const { activeGiveaways, loading: giveawaysLoading } = useActiveGiveaway();
+  // Get transaction functions from context
+  const { startTransaction, completeTransaction, failTransaction } = useTransaction();
   
   const [currentPage, setCurrentPage] = useState(1);
   const [isDrawingWinner, setIsDrawingWinner] = useState(false);
   const [drawingId, setDrawingId] = useState(null);
+  const [submissionResult, setSubmissionResult] = useState(null);
   const itemsPerPage = 5;
   
   // Calculate pagination
@@ -41,12 +45,41 @@ export default function StatsSection() {
   const handleDrawWinner = async (giveawayId) => {
     setIsDrawingWinner(true);
     setDrawingId(giveawayId);
+    setSubmissionResult(null);
+    
+    // Start transaction with function name
+    startTransaction("drawWinner");
     
     try {
-      await drawWinner(giveawayId);
-      // The context should update automatically via contract events
+      const result = await drawWinner(giveawayId);
+      
+      // Check the result
+      if (result && typeof result === 'string') {
+        // Update transaction to success state with transaction id
+        completeTransaction(result);
+        
+        // Update UI state
+        setSubmissionResult({
+          success: true,
+          message: `Successfully drew a winner for giveaway #${giveawayId}!`
+        });
+      } else {
+        // Handle transaction error
+        failTransaction(contractError || "Failed to draw winner. Please try again.");
+        
+        setSubmissionResult({
+          success: false,
+          message: contractError || "Failed to draw winner. Please try again."
+        });
+      }
     } catch (err) {
-      console.error("Error drawing winner:", err);
+      // Handle exception
+      failTransaction(err.message || "An error occurred while drawing a winner.");
+      
+      setSubmissionResult({
+        success: false,
+        message: err.message || "An error occurred while drawing a winner."
+      });
     } finally {
       setIsDrawingWinner(false);
       setDrawingId(null);
@@ -84,9 +117,16 @@ export default function StatsSection() {
 
         {isLoading && <p className="text-center py-4">Loading giveaways...</p>}
         
-        {contractError && (
+        {contractError && !submissionResult && (
           <div className="p-4 rounded-lg bg-red-100 text-red-700 border border-red-300">
             {contractError}
+          </div>
+        )}
+
+        {/* Submission result message */}
+        {submissionResult && (
+          <div className={`my-4 p-4 rounded-lg ${submissionResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+            {submissionResult.message}
           </div>
         )}
 

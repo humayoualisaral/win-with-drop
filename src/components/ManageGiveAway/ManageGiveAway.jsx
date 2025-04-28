@@ -1,6 +1,7 @@
 'use client';
 
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
+import { useTransaction } from '@/context/TransactionContext';
 import { useState } from 'react';
 import StateSection from '@/components/StateSection';
 
@@ -23,8 +24,8 @@ const CreateGiveawayForm = ({
   giveawayName, 
   setGiveawayName, 
   errorMessage, 
-  successMessage, 
-  error, 
+  submissionResult, 
+  error,
   isSubmitting 
 }) => (
   <div
@@ -55,17 +56,19 @@ const CreateGiveawayForm = ({
             {errorMessage}
           </p>
         )}
-        {successMessage && (
-          <p className="mt-2 text-sm" style={{ color: 'green' }}>
-            {successMessage}
-          </p>
-        )}
-        {error && (
+        {error && !submissionResult && (
           <p className="mt-2 text-sm" style={{ color: colors.error }}>
             {error}
           </p>
         )}
       </div>
+
+      {/* Submission result message */}
+      {submissionResult && (
+        <div className={`mt-2 p-4 rounded-lg ${submissionResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          {submissionResult.message}
+        </div>
+      )}
 
       <button
         type="submit"
@@ -87,7 +90,10 @@ export default function ManageGiveaway() {
   const [giveawayName, setGiveawayName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [submissionResult, setSubmissionResult] = useState(null);
+  
+  // Get transaction functions from context
+  const { startTransaction, completeTransaction, failTransaction } = useTransaction();
   
   const {
     createGiveaway,
@@ -102,7 +108,7 @@ export default function ManageGiveaway() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Form submitted"); // Debug log
-    setSuccessMessage('');
+    setSubmissionResult(null);
     setErrorMessage('');
     
     // Check if wallet is connected
@@ -128,19 +134,46 @@ export default function ManageGiveaway() {
     try {
       setIsSubmitting(true);
       console.log("Attempting to create giveaway:", giveawayName); // Debug log
-      const success = await createGiveaway(giveawayName);
       
-      if (success) {
+      // Start transaction with function name
+      startTransaction("createGiveaway");
+      
+      const result = await createGiveaway(giveawayName);
+      
+      if (result && typeof result === 'string') {
         console.log("Giveaway created successfully"); // Debug log
-        setSuccessMessage(`Giveaway "${giveawayName}" created successfully!`);
+        
+        // Update transaction to success state with transaction id
+        completeTransaction(result);
+        
+        // Update UI state
+        setSubmissionResult({
+          success: true,
+          message: `Giveaway "${giveawayName}" created successfully!`
+        });
+        
         setGiveawayName("");
       } else {
         console.log("Failed to create giveaway"); // Debug log
-        setErrorMessage("Failed to create giveaway. Please try again.");
+        
+        // Handle transaction error
+        failTransaction(error || "Failed to create giveaway. Please try again.");
+        
+        setSubmissionResult({
+          success: false,
+          message: "Failed to create giveaway. Please try again."
+        });
       }
     } catch (err) {
       console.error("Error creating giveaway:", err);
-      setErrorMessage(err.message || "An error occurred while creating the giveaway");
+      
+      // Handle exception
+      failTransaction(err.message || "An error occurred while creating the giveaway");
+      
+      setSubmissionResult({
+        success: false,
+        message: err.message || "An error occurred while creating the giveaway"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +184,10 @@ export default function ManageGiveaway() {
       {/* Tab Navigation */}
       <div className="flex space-x-2 mb-4 ml-2 mt-2 bg-gray-100 p-4">
         <button
-          onClick={() => setActiveSection("createGiveaway")}
+          onClick={() => {
+            setActiveSection("createGiveaway");
+            setSubmissionResult(null);
+          }}
           className={`px-2 py-1 text-xs rounded transition-colors ${
             activeSection === "createGiveaway"
               ? "text-white"
@@ -162,7 +198,10 @@ export default function ManageGiveaway() {
           Create Giveaway
         </button>
         <button
-          onClick={() => setActiveSection("currentGiveaways")}
+          onClick={() => {
+            setActiveSection("currentGiveaways");
+            setSubmissionResult(null);
+          }}
           className={`px-2 py-1 text-xs rounded transition-colors ${
             activeSection === "currentGiveaways"
               ? "text-white"
@@ -202,7 +241,7 @@ export default function ManageGiveaway() {
               giveawayName={giveawayName}
               setGiveawayName={setGiveawayName}
               errorMessage={errorMessage}
-              successMessage={successMessage}
+              submissionResult={submissionResult}
               error={error}
               isSubmitting={isSubmitting}
             />

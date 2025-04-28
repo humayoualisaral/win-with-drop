@@ -7,8 +7,8 @@ import Stats from '@/components/Stats/Stats';
 import ChainLinkVRF from '@/components/ChainLinkVRF/ChainLinkVRF';
 import ManageGiveAway from '@/components/ManageGiveAway/ManageGiveAway';
 import WalletConnect from '@/components/WalletConnect';
-import AuthCheck from '@/components/AuthCheck';
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
+import TransactionStatePopup from '@/components/TransactionStatePopup';
 
 export default function Home() {
   const [activeComponent, setActiveComponent] = useState('adminActions');
@@ -36,10 +36,11 @@ export default function Home() {
 
   // When wallet is connected, wrap with AuthCheck to verify admin/owner status
   return (
-    <AuthCheck>
+   <>
+      <TransactionStatePopup/>
       <Layout activeComponent={activeComponent} setActiveComponent={setActiveComponent}>
         {renderComponent()}
       </Layout>
-    </AuthCheck>
+   </>
   );
 }

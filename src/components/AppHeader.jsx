@@ -19,7 +19,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
-import { useWallet } from '@/context/WalletContext';
+import { useMultiGiveaway } from '@/context/MultiGiveawayContext'; // Updated import
 import { useActiveGiveaway } from '@/context/ActiveGiveaway';
 
 const drawerWidth = 240;
@@ -89,7 +89,7 @@ const GiveawaySelector = styled(FormControl)(({ theme }) => ({
 
 const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
   const [isNavOpen, setIsNavOpen] = React.useState(true);
-  const { account } = useWallet();
+  const { account, disconnect, isConnected } = useMultiGiveaway(); // Updated to use MultiGiveaway context
   const { allGiveaways, activeGiveaway, changeActiveGiveaway } = useActiveGiveaway();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = React.useState(false);
@@ -118,6 +118,9 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
   };
   
   const handleConfirmDisconnect = () => {
+    // Use the disconnect function from MultiGiveaway context
+    disconnect();
+    
     // Clear localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('walletConnected');
@@ -198,13 +201,21 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
               </GiveawaySelector>
             )}
             
-            {account && (
-              <WalletAddressDisplay>
-                <AccountBalanceWalletIcon fontSize="small" />
-                <Typography variant="body2" noWrap>
-                  {formatAddress(account)}
-                </Typography>
-              </WalletAddressDisplay>
+            {/* Wallet display section */}
+            {isConnected && account && (
+              <>
+                <WalletAddressDisplay>
+                  <AccountBalanceWalletIcon fontSize="small" />
+                  <Typography variant="body2" noWrap>
+                    {formatAddress(account)}
+                  </Typography>
+                </WalletAddressDisplay>
+                
+                {/* Disconnect button */}
+                <IconButton color="inherit" onClick={handleOpenDialog} title="Disconnect Wallet">
+                  <LogoutIcon />
+                </IconButton>
+              </>
             )}
           </div>
         </Toolbar>

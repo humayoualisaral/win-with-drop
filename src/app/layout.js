@@ -1,8 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { WalletProvider } from "@/context/WalletContext";
 import { MultiGiveawayProvider } from "@/context/MultiGiveawayContext";
 import { ActiveGiveawayProvider } from "@/context/ActiveGiveaway";
+import { TransactionProvider } from "@/context/TransactionContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,19 +22,19 @@ export const metadata = {
 export default function RootLayout({ children }) {
   const getContractAddress = () => {
     // Check which network we're using
-    const network = process.env.REACT_APP_NETWORK || process.env.REACT_APP_DEFAULT_NETWORK || 'SEPOLIA';
+    const network = process.env.NEXT_PUBLIC_NETWORK || process.env.NEXT_PUBLIC_DEFAULT_NETWORK || 'SEPOLIA';
     
     // Return the appropriate contract address based on network
     if (network === 'SEPOLIA') {
-      return process.env.REACT_APP_SEPOLIA_CONTRACT_ADDRESS;
+      return process.env.NEXT_PUBLIC_SEPOLIA_CONTRACT_ADDRESS;
     } else if (network === 'POLYGON') {
-      return process.env.REACT_APP_POLYGON_CONTRACT_ADDRESS;
-    } else if (network === 'MUMBAI') {
-      return process.env.REACT_APP_MUMBAI_CONTRACT_ADDRESS;
+      return process.env.NEXT_PUBLIC_POLYGON_CONTRACT_ADDRESS;
+    } else if (network === 'AMOY') {
+      return process.env.NEXT_PUBLIC_AMOY_CONTRACT_ADDRESS;
     }
     
     // Default to Sepolia contract address
-    return process.env.REACT_APP_SEPOLIA_CONTRACT_ADDRESS;
+    return process.env.NEXT_PUBLIC_SEPOLIA_CONTRACT_ADDRESS;
   };
 
   const contractAddress = getContractAddress();
@@ -44,13 +44,14 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <WalletProvider>
+
+        <TransactionProvider>
           <MultiGiveawayProvider contractAddress={contractAddress}>
-         <ActiveGiveawayProvider>
-         {children}
-         </ActiveGiveawayProvider>
+            <ActiveGiveawayProvider>
+              {children}
+            </ActiveGiveawayProvider>
           </MultiGiveawayProvider>
-        </WalletProvider>
+        </TransactionProvider>
       </body>
     </html>
   );

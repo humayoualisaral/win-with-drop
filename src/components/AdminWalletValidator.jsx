@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Wallet, Plus, Trash2 } from 'lucide-react';
-import { useMultiGiveaway } from '@/context/MultiGiveawayContext';
+"use client"
+import { useState, useEffect, useRef } from "react"
+import { CheckCircle, XCircle, Wallet, Plus, Trash2 } from 'lucide-react'
+import { useMultiGiveaway } from '@/context/MultiGiveawayContext'
+import { useTransaction } from "@/context/TransactionContext"
 
 export default function AdminWalletAddressInput() {
-  const [address, setAddress] = useState('');
-  const [isValid, setIsValid] = useState(false);
-  const [isTouched, setIsTouched] = useState(false);
-  const [isAdminAlready, setIsAdminAlready] = useState(false);
-  const [adminList, setAdminList] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [operationMessage, setOperationMessage] = useState({ type: '', message: '' });
+  const [address, setAddress] = useState('')
+  const [isValid, setIsValid] = useState(false)
+  const [isTouched, setIsTouched] = useState(false)
+  const [isAdminAlready, setIsAdminAlready] = useState(false)
+  const [adminList, setAdminList] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [operationMessage, setOperationMessage] = useState({ type: '', message: '' })
+  const [showPopup, setShowPopup] = useState(false)
+
+  // Get transaction functions from context
+  const { startTransaction, completeTransaction, failTransaction } = useTransaction()
 
   // Get context functions and state
   const { 
@@ -19,7 +25,7 @@ export default function AdminWalletAddressInput() {
     contract, 
     loading: contextLoading,
     error: contextError
-  } = useMultiGiveaway();
+  } = useMultiGiveaway()
 
   // Color scheme
   const colors = {
@@ -34,143 +40,161 @@ export default function AdminWalletAddressInput() {
     border: '#e2e8f0',        // Border color
     highlight: 'rgb(255 221 96)', // Highlight yellow
     danger: '#ef4444'         // Red for remove button
-  };
+  }
   
   // Validate Ethereum wallet address (0x followed by 40 hex characters)
   const validateWalletAddress = (addr) => {
-    const ethereumRegex = /^0x[a-fA-F0-9]{40}$/;
-    return ethereumRegex.test(addr);
-  };
+    const ethereumRegex = /^0x[a-fA-F0-9]{40}$/
+    return ethereumRegex.test(addr)
+  }
 
   // Check if an address is already an admin
   const checkIfAddressIsAdmin = async (addr) => {
-    if (!contract || !addr || !validateWalletAddress(addr)) return false;
+    if (!contract || !addr || !validateWalletAddress(addr)) return false
     
     try {
-      const isAdmin = await contract.isAdmin(addr);
-      return isAdmin;
+      const isAdmin = await contract.isAdmin(addr)
+      return isAdmin
     } catch (error) {
-      console.error("Error checking admin status:", error);
-      return false;
+      console.error("Error checking admin status:", error)
+      return false
     }
-  };
-
-  // Load all admins
-  // const loadAdmins = async () => {
-  //   if (!contract) return;
-    
-  //   try {
-  //     // We need to get the admin list from the contract
-  //     // Assuming there's a getAdmins function, if not, this would need to be modified
-  //     const admins = await contract.getAdmins();
-  //     setAdminList(admins);
-  //   } catch (error) {
-  //     console.error("Error loading admin list:", error);
-  //   }
-  // };
-
-  // Initial setup
-  // useEffect(() => {
-  //   if (contract) {
-  //     loadAdmins();
-  //   }
-  // }, [contract]);
+  }
 
   // Validate address and check if it's already an admin when address changes
   useEffect(() => {
     const validateAndCheck = async () => {
       if (!address) {
-        setIsValid(false);
-        setIsAdminAlready(false);
-        return;
+        setIsValid(false)
+        setIsAdminAlready(false)
+        return
       }
       
-      const valid = validateWalletAddress(address);
-      setIsValid(valid);
+      const valid = validateWalletAddress(address)
+      setIsValid(valid)
       
       if (valid) {
-        const isAdmin = await checkIfAddressIsAdmin(address);
-        setIsAdminAlready(isAdmin);
+        const isAdmin = await checkIfAddressIsAdmin(address)
+        setIsAdminAlready(isAdmin)
       }
-    };
+    }
     
-    validateAndCheck();
-  }, [address, contract]);
+    validateAndCheck()
+  }, [address, contract])
+
+  // Close popup after 5 seconds
+  useEffect(() => {
+    let timer
+    if (showPopup) {
+      timer = setTimeout(() => {
+        setShowPopup(false)
+      }, 5000)
+    }
+    return () => clearTimeout(timer)
+  }, [showPopup])
 
   const handleInputChange = (e) => {
-    setAddress(e.target.value);
-    if (!isTouched) setIsTouched(true);
+    setAddress(e.target.value)
+    if (!isTouched) setIsTouched(true)
     // Reset operation message when input changes
-    setOperationMessage({ type: '', message: '' });
-  };
+    setOperationMessage({ type: '', message: '' })
+  }
 
   const handleAddAdmin = async () => {
-    if (!isValid || isAdminAlready) return;
+    if (!isValid || isAdminAlready) return
     
-    setIsLoading(true);
-    setOperationMessage({ type: '', message: '' });
+    setIsLoading(true)
+    setOperationMessage({ type: '', message: '' })
+    
+    // Start transaction with function name
+    startTransaction("addAdmin")
     
     try {
-      const success = await addAdmin(address);
+      const txHash = await addAdmin(address)
       
-      if (success) {
+      if (txHash) {
+        // Update transaction to success state with transaction id
+        completeTransaction(txHash)
+        
         setOperationMessage({ 
           type: 'success', 
           message: `Successfully added ${address} as admin` 
-        });
-        setAddress('');
-        setIsTouched(false);
-        // loadAdmins(); // Refresh admin list
+        })
+        setAddress('')
+        setIsTouched(false)
+        setShowPopup(true)
       } else {
+        // Handle transaction error
+        failTransaction(contextError || "Failed to add admin. Please try again.")
+        
         setOperationMessage({ 
           type: 'error', 
           message: 'Failed to add admin. Please try again.' 
-        });
+        })
+        setShowPopup(true)
       }
     } catch (error) {
-      console.error("Error adding admin:", error);
+      console.error("Error adding admin:", error)
+      // Handle exception
+      failTransaction(error.message || "An error occurred while adding admin.")
+      
       setOperationMessage({ 
         type: 'error', 
         message: `Error: ${error.message || 'Unknown error occurred'}` 
-      });
+      })
+      setShowPopup(true)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleRemoveAdmin = async () => {
-    if (!isValid || !isAdminAlready) return;
+    if (!isValid || !isAdminAlready) return
     
-    setIsLoading(true);
-    setOperationMessage({ type: '', message: '' });
+    setIsLoading(true)
+    setOperationMessage({ type: '', message: '' })
+    
+    // Start transaction with function name
+    startTransaction("removeAdmin")
     
     try {
-      const success = await removeAdmin(address);
+      const txHash = await removeAdmin(address)
       
-      if (success) {
+      if (txHash) {
+        // Update transaction to success state with transaction id
+        completeTransaction(txHash)
+        
         setOperationMessage({ 
           type: 'success', 
           message: `Successfully removed ${address} from admins` 
-        });
-        setAddress('');
-        setIsTouched(false);
-        // loadAdmins(); // Refresh admin list
+        })
+        setAddress('')
+        setIsTouched(false)
+        setShowPopup(true)
       } else {
+        // Handle transaction error
+        failTransaction(contextError || "Failed to remove admin. Please try again.")
+        
         setOperationMessage({ 
           type: 'error', 
           message: 'Failed to remove admin. Please try again.' 
-        });
+        })
+        setShowPopup(true)
       }
     } catch (error) {
-      console.error("Error removing admin:", error);
+      console.error("Error removing admin:", error)
+      // Handle exception
+      failTransaction(error.message || "An error occurred while removing admin.")
+      
       setOperationMessage({ 
         type: 'error', 
         message: `Error: ${error.message || 'Unknown error occurred'}` 
-      });
+      })
+      setShowPopup(true)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // Check if user has permission to manage admins
   if (!isOwner) {
@@ -188,7 +212,7 @@ export default function AdminWalletAddressInput() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -247,17 +271,6 @@ export default function AdminWalletAddressInput() {
             </p>
           )}
           
-          {/* Operation result message */}
-          {operationMessage.message && (
-            <div 
-              className={`mt-4 p-3 rounded-lg ${
-                operationMessage.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}
-            >
-              {operationMessage.message}
-            </div>
-          )}
-          
           {/* Context error display */}
           {contextError && (
             <div className="mt-4 p-3 rounded-lg bg-red-100 text-red-800">
@@ -302,30 +315,54 @@ export default function AdminWalletAddressInput() {
               Processing... Please wait
             </div>
           )}
-          
-          {/* Admin list section */}
-          {/* {adminList.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4">Current Admins</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto bg-slate-50 p-4 rounded-lg">
-                {adminList.map((admin, index) => (
-                  <div key={index} className="p-2 bg-white rounded border border-slate-200 flex justify-between items-center">
-                    <span className="text-sm font-mono overflow-hidden text-ellipsis">
-                      {admin}
-                    </span>
-                    <button 
-                      onClick={() => setAddress(admin)}
-                      className="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded ml-2"
-                    >
-                      Select
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )} */}
         </div>
       </div>
+      
+      {/* Popup message */}
+      {showPopup && operationMessage.message && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
+          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowPopup(false)}></div>
+          <div className="bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-md z-10 transform transition-all">
+            <div 
+              className="p-4 w-full" 
+              style={{ 
+                backgroundColor: operationMessage.type === 'success' ? colors.success : colors.error 
+              }}
+            >
+              <h3 className="text-xl font-bold text-white text-center">
+                {operationMessage.type === 'success' ? 'Success' : 'Error'}
+              </h3>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                {operationMessage.type === 'success' ? (
+                  <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <CheckCircle size={40} color={colors.success} />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                    <XCircle size={40} color={colors.error} />
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-center text-lg">
+                {operationMessage.message}
+              </p>
+              
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setShowPopup(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }

@@ -1,7 +1,7 @@
 'use client'
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { getNetworkConfig, isActiveNetwork, getVRFConfig } from '@/config/networkConfig';
+import { getNetworkConfig, isActiveNetwork } from '@/config/networkConfig';
 import abi from '@/Contract/Abi.json'
 
 // Create the context
@@ -22,7 +22,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   const [error, setError] = useState(null);
   const [giveaways, setGiveaways] = useState([]);
   const [networkConfig, setNetworkConfig] = useState(getNetworkConfig());
-  const [vrfConfig, setVrfConfig] = useState(getVRFConfig());
+  const [vrfConfig, setVrfConfig] = useState();
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState(null);
@@ -443,7 +443,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       
       // Refresh giveaways list
       await loadGiveaways(validContract);
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error creating giveaway:", err);
       setError(err.message || "Failed to create giveaway");
@@ -542,7 +542,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       
       // Refresh giveaways list
       await loadGiveaways(validContract);
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error batch adding participants:", err);
       setError(err.message || "Failed to add participants");
@@ -575,7 +575,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       
       // Refresh giveaways list
       await loadGiveaways(validContract);
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error drawing winner:", err);
       setError(err.message || "Failed to draw winner");
@@ -694,7 +694,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       await tx.wait();
       console.log("Transaction confirmed");
       
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error adding admin:", err);
       setError(err.message || "Failed to add admin");
@@ -729,7 +729,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       await tx.wait();
       console.log("Transaction confirmed");
       
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error removing admin:", err);
       setError(err.message || "Failed to remove admin");
@@ -765,7 +765,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       await tx.wait();
       console.log("Transaction confirmed");
       
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error setting key hash:", err);
       setError(err.message || "Failed to set key hash");
@@ -800,7 +800,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       await tx.wait();
       console.log("Transaction confirmed");
       
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error setting callback gas limit:", err);
       setError(err.message || "Failed to set callback gas limit");
@@ -835,7 +835,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       await tx.wait();
       console.log("Transaction confirmed");
       
-      return true;
+      return tx.hash;
     } catch (err) {
       console.error("Error setting subscription ID:", err);
       setError(err.message || "Failed to set subscription ID");

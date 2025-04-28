@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useMultiGiveaway } from "@/context/MultiGiveawayContext"
 import { useActiveGiveaway } from "@/context/ActiveGiveaway"
+import { useTransaction } from "@/context/TransactionContext"
 
 export default function EmailValidator() {
   const [input, setInput] = useState("")
@@ -11,6 +12,9 @@ export default function EmailValidator() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submissionResult, setSubmissionResult] = useState(null)
   const textareaRef = useRef(null)
+  
+  // Get transaction functions from context
+  const { startTransaction, completeTransaction, failTransaction } = useTransaction()
   
   // Get the active giveaway and functions from context
   const { batchAddParticipants, loading, error } = useMultiGiveaway()
@@ -158,35 +162,49 @@ export default function EmailValidator() {
     setIsSubmitting(true)
     setSubmissionResult(null)
     
+    // Start transaction with function name
+    startTransaction("batchAddParticipants")
+    
     try {
       // Extract valid emails
       const emails = validationResults
         .filter(result => result.isValid)
         .map(result => result.email)
       
-      // Add participants to the active giveaway
-      const success = await batchAddParticipants(
+      const result = await batchAddParticipants(
         Number(activeGiveaway.id), 
         emails
       )
       
-      if (success) {
+      // Fixed code - properly check the result type
+      if (result && typeof result === 'string') {
+        // Update transaction to success state with transaction id
+        completeTransaction(result)
+        
+        // Also update the UI state
         setSubmissionResult({
           success: true,
           message: `Successfully added ${emails.length} participant${emails.length > 1 ? 's' : ''} to the giveaway!`
         })
+        
         // Clear input after successful submission
         setInput("")
         setValidationResults([])
         setIsValid(false)
         setHighlightedText("")
       } else {
+        // Handle transaction error
+        failTransaction(error || "Failed to add participants. Please try again.")
+        
         setSubmissionResult({
           success: false,
           message: error || "Failed to add participants. Please try again."
         })
       }
     } catch (err) {
+      // Handle exception
+      failTransaction(err.message || "An error occurred while adding participants.")
+      
       setSubmissionResult({
         success: false,
         message: err.message || "An error occurred while adding participants."
