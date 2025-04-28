@@ -203,11 +203,11 @@ export default function AdminWalletAddressInput() {
         <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
           <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
             <Wallet className="mr-3 text-white" size={28} />
-            <h2 className="text-2xl font-bold text-white">Admin Management</h2>
+            <h2 className="text-2xl font-bold text-white">Admin Management {isOwner?"yes":"kfdf"}</h2>
           </div>
           <div className="p-8 text-center">
             <p className="text-lg text-red-600">
-              Only the contract owner can manage admins.
+              Only the contract owner can manage admins. 
             </p>
           </div>
         </div>

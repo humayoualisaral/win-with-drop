@@ -27,6 +27,61 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState(null);
 
+  // Check owner status function - to get latest owner status
+  const checkOwnerStatus = async (contractInstance = null) => {
+    try {
+      if (!account) return false;
+      
+      let targetContract = contractInstance || contract;
+      
+      if (!targetContract) {
+        try {
+          const { contract: validContract } = await getSignerAndContract();
+          targetContract = validContract;
+        } catch (error) {
+          console.error("Failed to get valid contract for owner check:", error);
+          return false;
+        }
+      }
+      
+      const owner = await targetContract.getContractOwner();
+      const isCurrentOwner = account.toLowerCase() === owner.toLowerCase();
+      console.log("Owner check:", { account, owner, isCurrentOwner });
+      setIsOwner(isCurrentOwner);
+      return isCurrentOwner;
+    } catch (err) {
+      console.error("Error checking owner status:", err);
+      return false;
+    }
+  };
+
+  // Check admin status function
+  const checkAdminStatus = async (contractInstance = null) => {
+    try {
+      if (!account) return false;
+      
+      let targetContract = contractInstance || contract;
+      
+      if (!targetContract) {
+        try {
+          const { contract: validContract } = await getSignerAndContract();
+          targetContract = validContract;
+        } catch (error) {
+          console.error("Failed to get valid contract for admin check:", error);
+          return false;
+        }
+      }
+      
+      const adminStatus = await targetContract.isAdmin(account);
+      console.log("Admin check:", { account, adminStatus });
+      setIsAdmin(adminStatus);
+      return adminStatus;
+    } catch (err) {
+      console.error("Error checking admin status:", err);
+      return false;
+    }
+  };
+
   // Check for existing connection on mount
   useEffect(() => {
     const checkExistingConnection = async () => {
@@ -79,12 +134,15 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   useEffect(() => {
     // Set up listeners for account changes
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
+      window.ethereum.on('accountsChanged', async (accounts) => {
         if (accounts.length > 0) {
           setAccount(accounts[0]);
           // Reinitialize with new account
           if (isConnected) {
-            initializeContract(accounts[0]);
+            await initializeContract(accounts[0]);
+            // Make sure to check owner and admin status whenever account changes
+            await checkOwnerStatus();
+            await checkAdminStatus();
           }
         } else {
           // Disconnect if no accounts
@@ -92,7 +150,7 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         }
       });
 
-      window.ethereum.on('chainChanged', (newChainId) => {
+      window.ethereum.on('chainChanged', async (newChainId) => {
         // Handle chain change
         const currentChainId = parseInt(newChainId, 16);
         setChainId(currentChainId);
@@ -101,7 +159,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         
         // Reinitialize contract if connected
         if (isConnected && account) {
-          initializeContract(account);
+          await initializeContract(account);
+          // Re-check permissions after chain change
+          await checkOwnerStatus();
+          await checkAdminStatus();
         }
       });
     }
@@ -114,6 +175,19 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       }
     };
   }, [account, isConnected, contractAddress]);
+
+  // Set up periodic refresh of owner and admin status
+  useEffect(() => {
+    if (!isConnected || !contract || !account) return;
+    
+    // Refresh permissions every 30 seconds to catch external changes
+    const refreshInterval = setInterval(() => {
+      checkOwnerStatus();
+      checkAdminStatus();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(refreshInterval);
+  }, [isConnected, contract, account]);
 
   // Initialize the contract with the connected account
   const initializeContract = async (currentAccount, currentSigner = null) => {
@@ -174,13 +248,9 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
           console.log("Contract initialized with signer");
           setContract(newContract);
 
-          // Check if user is owner or admin
-          const owner = await newContract.getContractOwner();
-          setIsOwner(currentAccount.toLowerCase() === owner.toLowerCase());
-          console.log(currentAccount,"this is current account")
-          console.log(owner,"this is owner")
-          const adminStatus = await newContract.isAdmin(currentAccount);
-          setIsAdmin(adminStatus);
+          // Check if user is owner or admin using the dedicated functions
+          await checkOwnerStatus(newContract);
+          await checkAdminStatus(newContract);
 
           // Load active giveaways
           await loadGiveaways(newContract);
@@ -671,7 +741,9 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     try {
       setError(null);
       
-      if (!isOwner) {
+      // First check if user is still the owner
+      const ownerStatus = await checkOwnerStatus();
+      if (!ownerStatus) {
         setError("Only the contract owner can add admins");
         return false;
       }
@@ -706,7 +778,9 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     try {
       setError(null);
       
-      if (!isOwner) {
+      // First check if user is still the owner
+      const ownerStatus = await checkOwnerStatus();
+      if (!ownerStatus) {
         setError("Only the contract owner can remove admins");
         return false;
       }
@@ -742,7 +816,11 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     try {
       setError(null);
       
-      if (!isOwner && !isAdmin) {
+      // Check permissions first
+      const ownerStatus = await checkOwnerStatus();
+      const adminStatus = await checkAdminStatus();
+      
+      if (!ownerStatus && !adminStatus) {
         setError("Only the contract owner or admins can set key hash");
         return false;
       }
@@ -777,7 +855,11 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     try {
       setError(null);
       
-      if (!isOwner && !isAdmin) {
+      // Check permissions first
+      const ownerStatus = await checkOwnerStatus();
+      const adminStatus = await checkAdminStatus();
+      
+      if (!ownerStatus && !adminStatus) {
         setError("Only the contract owner or admins can set callback gas limit");
         return false;
       }
@@ -812,7 +894,11 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     try {
       setError(null);
       
-      if (!isOwner && !isAdmin) {
+      // Check permissions first
+      const ownerStatus = await checkOwnerStatus();
+      const adminStatus = await checkAdminStatus();
+      
+      if (!ownerStatus && !adminStatus) {
         setError("Only the contract owner or admins can set subscription ID");
         return false;
       }
@@ -869,7 +955,6 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       return null;
     }
   };
-
   // Export all the functions and state variables
   const contextValue = {
     // Contract state
