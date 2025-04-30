@@ -17,7 +17,6 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import LogoutIcon from '@mui/icons-material/Logout';
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext'; // Updated import
 import { useActiveGiveaway } from '@/context/ActiveGiveaway';
@@ -109,10 +108,6 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
     setIsNavOpen(!isNavOpen);
   };
   
-  const handleOpenDialog = () => {
-    setDialogOpen(true);
-  };
-
   const handleCloseDialog = () => {
     setDialogOpen(false);
   };
@@ -211,10 +206,7 @@ const AppHeader = ({ open, handleDrawerOpen, handleDrawerClose }) => {
                   </Typography>
                 </WalletAddressDisplay>
                 
-                {/* Disconnect button */}
-                <IconButton color="inherit" onClick={handleOpenDialog} title="Disconnect Wallet">
-                  <LogoutIcon />
-                </IconButton>
+                
               </>
             )}
           </div>
