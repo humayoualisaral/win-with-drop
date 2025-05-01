@@ -1,6 +1,6 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
-import { CheckCircle, XCircle, Wallet, Plus, Trash2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from "react"
+import { CheckCircle, XCircle, Wallet, Plus, Trash2, Loader2 } from 'lucide-react'
 import { useMultiGiveaway } from '@/context/MultiGiveawayContext'
 import { useTransaction } from "@/context/TransactionContext"
 
@@ -13,6 +13,8 @@ export default function AdminWalletAddressInput() {
   const [isLoading, setIsLoading] = useState(false)
   const [operationMessage, setOperationMessage] = useState({ type: '', message: '' })
   const [showPopup, setShowPopup] = useState(false)
+  const [ownerStatus, setOwnerStatus] = useState(false)
+  const [ownerLoading, setOwnerLoading] = useState(true)
 
   // Get transaction functions from context
   const { startTransaction, completeTransaction, failTransaction } = useTransaction()
@@ -21,10 +23,12 @@ export default function AdminWalletAddressInput() {
   const { 
     addAdmin, 
     removeAdmin, 
-    isOwner, 
     contract, 
     loading: contextLoading,
-    error: contextError
+    initializing,
+    error: contextError,
+    isConnected,
+    account
   } = useMultiGiveaway()
 
   // Color scheme
@@ -48,8 +52,32 @@ export default function AdminWalletAddressInput() {
     return ethereumRegex.test(addr)
   }
 
+  // Check owner status directly from the component
+  const checkOwnerStatus = useCallback(async () => {
+    if (!contract || !account) {
+      setOwnerStatus(false)
+      setOwnerLoading(false)
+      return false
+    }
+    
+    try {
+      setOwnerLoading(true)
+      const owner = await contract.getContractOwner()
+      const isCurrentOwner = account.toLowerCase() === owner.toLowerCase()
+      
+      setOwnerStatus(isCurrentOwner)
+      setOwnerLoading(false)
+      return isCurrentOwner
+    } catch (err) {
+      console.error("Error checking owner status:", err)
+      setOwnerStatus(false)
+      setOwnerLoading(false)
+      return false
+    }
+  }, [contract, account])
+
   // Check if an address is already an admin
-  const checkIfAddressIsAdmin = async (addr) => {
+  const checkIfAddressIsAdmin = useCallback(async (addr) => {
     if (!contract || !addr || !validateWalletAddress(addr)) return false
     
     try {
@@ -59,7 +87,23 @@ export default function AdminWalletAddressInput() {
       console.error("Error checking admin status:", error)
       return false
     }
-  }
+  }, [contract])
+
+  // Fetch owner status whenever contract or account changes
+  useEffect(() => {
+    // Only check when we have both contract and account
+    if (contract && account && !initializing) {
+      // We use an IIFE to avoid issues with useEffect's cleanup
+      const fetchOwnerStatus = async () => {
+        await checkOwnerStatus()
+      }
+      
+      fetchOwnerStatus()
+    } else {
+      // Reset owner loading when conditions aren't met
+      setOwnerLoading(false)
+    }
+  }, [contract, account, initializing, checkOwnerStatus])
 
   // Validate address and check if it's already an admin when address changes
   useEffect(() => {
@@ -73,14 +117,14 @@ export default function AdminWalletAddressInput() {
       const valid = validateWalletAddress(address)
       setIsValid(valid)
       
-      if (valid) {
+      if (valid && contract) {
         const isAdmin = await checkIfAddressIsAdmin(address)
         setIsAdminAlready(isAdmin)
       }
     }
     
     validateAndCheck()
-  }, [address, contract])
+  }, [address, contract, checkIfAddressIsAdmin])
 
   // Close popup after 5 seconds
   useEffect(() => {
@@ -196,14 +240,53 @@ export default function AdminWalletAddressInput() {
     }
   }
 
-  // Check if user has permission to manage admins
-  if (!isOwner) {
+  // Show loading state during initialization or owner status check
+  if (initializing || ownerLoading) {
     return (
       <div className="bg-slate-50 p-8 pt-[90px]">
         <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
           <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
             <Wallet className="mr-3 text-white" size={28} />
-            <h2 className="text-2xl font-bold text-white">Admin Management {isOwner?"yes":"kfdf"}</h2>
+            <h2 className="text-2xl font-bold text-white">Admin Management</h2>
+          </div>
+          <div className="p-8 flex flex-col items-center justify-center">
+            <Loader2 className="animate-spin text-cyan-600 mb-4" size={36} />
+            <p className="text-lg text-cyan-600">
+              {initializing ? "Initializing wallet connection..." : "Checking permissions..."}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show connection needed message if not connected
+  if (!isConnected) {
+    return (
+      <div className="bg-slate-50 p-8 pt-[90px]">
+        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
+          <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
+            <Wallet className="mr-3 text-white" size={28} />
+            <h2 className="text-2xl font-bold text-white">Admin Management</h2>
+          </div>
+          <div className="p-8 text-center">
+            <p className="text-lg text-amber-600">
+              Please connect your wallet to manage admins.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Check if user has permission to manage admins
+  if (!ownerStatus) {
+    return (
+      <div className="bg-slate-50 p-8 pt-[90px]">
+        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
+          <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
+            <Wallet className="mr-3 text-white" size={28} />
+            <h2 className="text-2xl font-bold text-white">Admin Management</h2>
           </div>
           <div className="p-8 text-center">
             <p className="text-lg text-red-600">
@@ -224,98 +307,118 @@ export default function AdminWalletAddressInput() {
           <h2 className="text-2xl font-bold text-white">Admin Management</h2>
         </div>
         
-        {/* Content Section */}
-        <div className="p-8">
-          <div className="relative">
-            <input
-              type="text"
-              value={address}
-              onChange={handleInputChange}
-              placeholder="0x..."
-              className="w-full px-4 py-4 text-lg bg-slate-50 text-slate-900 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all"
-              style={{
-                borderColor: isTouched 
-                  ? isValid 
-                    ? isAdminAlready ? colors.error : colors.success
-                    : colors.error 
-                  : colors.border,
-                boxShadow: isTouched && isValid && !isAdminAlready ? `0 0 0 2px ${colors.highlight}` : 'none'
-              }}
-              disabled={isLoading || contextLoading}
-            />
+        {/* Loading indicator if context is still loading */}
+        {contextLoading && (
+          <div className="p-8 flex flex-col items-center justify-center">
+            <Loader2 className="animate-spin text-cyan-600 mb-4" size={36} />
+            <p className="text-lg text-cyan-600">
+              Loading admin information...
+            </p>
+          </div>
+        )}
+        
+        {/* Content Section - Only show when not in context loading state */}
+        {!contextLoading && (
+          <div className="p-8">
+            <div className="relative">
+              <input
+                type="text"
+                value={address}
+                onChange={handleInputChange}
+                placeholder="0x..."
+                className="w-full px-4 py-4 text-lg bg-slate-50 text-slate-900 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all"
+                style={{
+                  borderColor: isTouched 
+                    ? isValid 
+                      ? isAdminAlready ? colors.error : colors.success
+                      : colors.error 
+                    : colors.border,
+                  boxShadow: isTouched && isValid && !isAdminAlready ? `0 0 0 2px ${colors.highlight}` : 'none'
+                }}
+                disabled={isLoading}
+              />
+              
+              {isTouched && (
+                <div className="absolute right-4 top-4">
+                  {isValid ? (
+                    <CheckCircle 
+                      color={isAdminAlready ? colors.error : colors.success} 
+                      size={24} 
+                    />
+                  ) : (
+                    <XCircle color={colors.error} size={24} />
+                  )}
+                </div>
+              )}
+            </div>
             
-            {isTouched && (
-              <div className="absolute right-4 top-4">
-                {isValid ? (
-                  <CheckCircle 
-                    color={isAdminAlready ? colors.error : colors.success} 
-                    size={24} 
-                  />
+            {/* Validation messages */}
+            {isTouched && !isValid && address && (
+              <p className="mt-3 text-red-600 text-sm">
+                Please enter a valid wallet address (0x followed by 40 hex characters)
+              </p>
+            )}
+            
+            {isTouched && isValid && isAdminAlready && (
+              <p className="mt-3 text-amber-600 text-sm">
+                This address is already an admin. You can only remove it.
+              </p>
+            )}
+            
+            {/* Context error display */}
+            {contextError && (
+              <div className="mt-4 p-3 rounded-lg bg-red-100 text-red-800">
+                {contextError}
+              </div>
+            )}
+            
+            {/* Action buttons */}
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <button
+                onClick={handleAddAdmin}
+                disabled={!isValid || isAdminAlready || isLoading}
+                className="py-4 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center"
+                style={{
+                  backgroundColor: isValid && !isAdminAlready && !isLoading ? colors.secondary : '#e2e8f0',
+                  color: isValid && !isAdminAlready && !isLoading ? 'white' : colors.lightText,
+                  cursor: isValid && !isAdminAlready && !isLoading ? 'pointer' : 'not-allowed'
+                }}
+              >
+                {isLoading ? (
+                  <Loader2 size={20} className="mr-2 animate-spin" />
                 ) : (
-                  <XCircle color={colors.error} size={24} />
+                  <Plus size={20} className="mr-2" />
                 )}
+                Add Admin
+              </button>
+              
+              <button
+                onClick={handleRemoveAdmin}
+                disabled={!isValid || !isAdminAlready || isLoading}
+                className="py-4 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center"
+                style={{
+                  backgroundColor: isValid && isAdminAlready && !isLoading ? colors.danger : '#e2e8f0',
+                  color: isValid && isAdminAlready && !isLoading ? 'white' : colors.lightText,
+                  cursor: isValid && isAdminAlready && !isLoading ? 'pointer' : 'not-allowed'
+                }}
+              >
+                {isLoading ? (
+                  <Loader2 size={20} className="mr-2 animate-spin" />
+                ) : (
+                  <Trash2 size={20} className="mr-2" />
+                )}
+                Remove Admin
+              </button>
+            </div>
+            
+            {/* Transaction processing indicator */}
+            {isLoading && (
+              <div className="mt-4 text-center text-cyan-600">
+                Processing transaction... Please confirm in your wallet
               </div>
             )}
           </div>
-          
-          {/* Validation messages */}
-          {isTouched && !isValid && address && (
-            <p className="mt-3 text-red-600 text-sm">
-              Please enter a valid wallet address (0x followed by 40 hex characters)
-            </p>
-          )}
-          
-          {isTouched && isValid && isAdminAlready && (
-            <p className="mt-3 text-amber-600 text-sm">
-              This address is already an admin. You can only remove it.
-            </p>
-          )}
-          
-          {/* Context error display */}
-          {contextError && (
-            <div className="mt-4 p-3 rounded-lg bg-red-100 text-red-800">
-              {contextError}
-            </div>
-          )}
-          
-          {/* Action buttons */}
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <button
-              onClick={handleAddAdmin}
-              disabled={!isValid || isAdminAlready || isLoading || contextLoading}
-              className="py-4 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center"
-              style={{
-                backgroundColor: isValid && !isAdminAlready && !isLoading && !contextLoading ? colors.secondary : '#e2e8f0',
-                color: isValid && !isAdminAlready && !isLoading && !contextLoading ? 'white' : colors.lightText,
-                cursor: isValid && !isAdminAlready && !isLoading && !contextLoading ? 'pointer' : 'not-allowed'
-              }}
-            >
-              <Plus size={20} className="mr-2" />
-              Add Admin
-            </button>
-            
-            <button
-              onClick={handleRemoveAdmin}
-              disabled={!isValid || !isAdminAlready || isLoading || contextLoading}
-              className="py-4 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center"
-              style={{
-                backgroundColor: isValid && isAdminAlready && !isLoading && !contextLoading ? colors.danger : '#e2e8f0',
-                color: isValid && isAdminAlready && !isLoading && !contextLoading ? 'white' : colors.lightText,
-                cursor: isValid && isAdminAlready && !isLoading && !contextLoading ? 'pointer' : 'not-allowed'
-              }}
-            >
-              <Trash2 size={20} className="mr-2" />
-              Remove Admin
-            </button>
-          </div>
-          
-          {/* Loading indicator */}
-          {(isLoading || contextLoading) && (
-            <div className="mt-4 text-center text-cyan-600">
-              Processing... Please wait
-            </div>
-          )}
-        </div>
+        )}
       </div>
       
       {/* Popup message */}
