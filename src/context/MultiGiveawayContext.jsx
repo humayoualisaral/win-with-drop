@@ -10,37 +10,6 @@ const MultiGiveawayContext = createContext();
 // ABI from your import
 const MULTIGIVEAWAY_ABI = abi;
 
-// Function to fetch gas prices from Polygon Gas Station API
-const fetchPolygonGasPrice = async (isAmoy = false) => {
-  try {
-    const url = isAmoy 
-      ? 'https://gasstation.polygon.technology/amoy' 
-      : 'https://gasstation.polygon.technology/v2';
-    
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Gas station API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Gas prices from ${isAmoy ? 'Amoy' : 'Polygon'} API:`, data);
-    
-    // Convert to wei (gwei * 10^9)
-    // Using fast price for quicker confirmations
-    const maxFeePerGas = ethers.parseUnits(data.fast.maxFee.toString(), 'gwei');
-    const maxPriorityFeePerGas = ethers.parseUnits(data.fast.maxPriorityFee.toString(), 'gwei');
-    
-    return {
-      maxFeePerGas,
-      maxPriorityFeePerGas
-    };
-  } catch (error) {
-    console.error(`Error fetching gas prices from ${isAmoy ? 'Amoy' : 'Polygon'} API:`, error);
-    // Return null so we can fall back to provider's gas estimation
-    return null;
-  }
-};
-
 export function MultiGiveawayProvider({ children, contractAddress }) {
   const [contract, setContract] = useState(null);
   const [signer, setSigner] = useState(null);
@@ -414,44 +383,6 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     return { signer, contract };
   };
 
-  // Get transaction options based on the current network
-  const getTransactionOptions = async () => {
-    // Default empty options
-    const options = {};
-
-    // Check if we're on Polygon or Amoy networks
-    const isPolygon = networkConfig.name === 'Polygon';
-    const isAmoy = networkConfig.name === 'Amoy';
-    
-    if (isPolygon || isAmoy) {
-      try {
-        // Fetch gas prices from the appropriate API
-        const gasPrices = await fetchPolygonGasPrice(isAmoy);
-        
-        if (gasPrices) {
-          // Use EIP-1559 fee structure (maxFeePerGas and maxPriorityFeePerGas)
-          options.maxFeePerGas = gasPrices.maxFeePerGas;
-          options.maxPriorityFeePerGas = gasPrices.maxPriorityFeePerGas;
-          console.log(`Using gas prices for ${networkConfig.name}:`, {
-            maxFeePerGas: ethers.formatUnits(gasPrices.maxFeePerGas, 'gwei'),
-            maxPriorityFeePerGas: ethers.formatUnits(gasPrices.maxPriorityFeePerGas, 'gwei')
-          });
-        } else {
-          // Fallback: Get gas price from provider and increase by 10%
-          console.log("Using fallback gas price calculation");
-          const gasPrice = await provider.getGasPrice();
-          options.gasPrice = gasPrice.mul(110).div(100); // 10% increase
-          console.log("Fallback gas price:", ethers.formatUnits(options.gasPrice, 'gwei'), "gwei");
-        }
-      } catch (err) {
-        console.error("Error setting gas price:", err);
-        // If all else fails, let the provider estimate gas price
-      }
-    }
-    
-    return options;
-  };
-
   // Load all giveaways from the contract
   const loadGiveaways = async (contractInstance = null) => {
     try {
@@ -561,13 +492,20 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return false;
       }
       
-      // Get transaction options with gas prices
-      const txOptions = await getTransactionOptions();
+      // Get optimal gas price based on the network
+      let gasPrice;
+      if (networkConfig.name === 'Polygon' || networkConfig.name === 'Mumbai') {
+        // For Polygon, get current gas price and increase slightly for faster confirmation
+        gasPrice = await provider.getGasPrice();
+        gasPrice = gasPrice.mul(110).div(100); // 10% increase
+      }
       
-      console.log("Creating giveaway:", name, "with options:", txOptions);
+      console.log("Creating giveaway:", name);
       
       // Submit transaction
-      const tx = await validContract.createGiveaway(name, txOptions);
+      const tx = await validContract.createGiveaway(name, {
+        gasPrice: gasPrice // This will be undefined for networks other than Polygon
+      });
       
       console.log("Transaction sent:", tx.hash);
       await tx.wait();
@@ -598,13 +536,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return false;
       }
       
-      // Get transaction options with gas prices
-      const txOptions = await getTransactionOptions();
-      
-      console.log(`Setting giveaway ${giveawayId} active status to ${active} with options:`, txOptions);
+      console.log(`Setting giveaway ${giveawayId} active status to ${active}`);
       
       // Submit transaction
-      const tx = await validContract.setGiveawayActive(giveawayId, active, txOptions);
+      const tx = await validContract.setGiveawayActive(giveawayId, active);
       console.log("Transaction sent:", tx.hash);
       await tx.wait();
       console.log("Transaction confirmed");
@@ -634,13 +569,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return false;
       }
       
-      // Get transaction options with gas prices
-      const txOptions = await getTransactionOptions();
-      
-      console.log(`Adding participant to giveaway ${giveawayId}: ${email} with options:`, txOptions);
+      console.log(`Adding participant to giveaway ${giveawayId}: ${email}`);
       
       // Submit transaction
-      const tx = await validContract.addParticipant(giveawayId, email, txOptions);
+      const tx = await validContract.addParticipant(giveawayId, email);
       console.log("Transaction sent:", tx.hash);
       await tx.wait();
       console.log("Transaction confirmed");
@@ -670,13 +602,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return false;
       }
       
-      // Get transaction options with gas prices
-      const txOptions = await getTransactionOptions();
-      
-      console.log(`Batch adding ${emails.length} participants to giveaway ${giveawayId} with options:`, txOptions);
+      console.log(`Batch adding ${emails.length} participants to giveaway ${giveawayId}`);
       
       // Submit transaction
-      const tx = await validContract.batchAddParticipants(giveawayId, emails, txOptions);
+      const tx = await validContract.batchAddParticipants(giveawayId, emails);
       console.log("Transaction sent:", tx.hash);
       await tx.wait();
       console.log("Transaction confirmed");
@@ -706,13 +635,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return false;
       }
       
-      // Get transaction options with gas prices
-      const txOptions = await getTransactionOptions();
-      
-      console.log(`Drawing winner for giveaway ${giveawayId} with options:`, txOptions);
+      console.log(`Drawing winner for giveaway ${giveawayId}`);
       
       // Submit transaction
-      const tx = await validContract.drawWinner(giveawayId, txOptions);
+      const tx = await validContract.drawWinner(giveawayId);
       console.log("Transaction sent:", tx.hash);
       await tx.wait();
       console.log("Transaction confirmed");
@@ -832,13 +758,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return false;
       }
       
-      // Get transaction options with gas prices
-      const txOptions = await getTransactionOptions();
-      
-      console.log(`Adding admin: ${adminAddress} with options:`, txOptions);
+      console.log(`Adding admin: ${adminAddress}`);
       
       // Submit transaction
-      const tx = await validContract.addAdmin(adminAddress, txOptions);
+      const tx = await validContract.addAdmin(adminAddress);
       console.log("Transaction sent:", tx.hash);
       await tx.wait();
       console.log("Transaction confirmed");
@@ -872,13 +795,10 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
         return false;
       }
       
-      // Get transaction options with gas prices
-      const txOptions = await getTransactionOptions();
-      
-      console.log(`Removing admin: ${adminAddress} with options:`, txOptions);
+      console.log(`Removing admin: ${adminAddress}`);
       
       // Submit transaction
-      const tx = await validContract.removeAdmin(adminAddress, txOptions);
+      const tx = await validContract.removeAdmin(adminAddress);
       console.log("Transaction sent:", tx.hash);
       await tx.wait();
       console.log("Transaction confirmed");
@@ -890,7 +810,6 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       return false;
     }
   };
-
 
   // VRF Configuration functions
   const setKeyHash = async (keyHash) => {
