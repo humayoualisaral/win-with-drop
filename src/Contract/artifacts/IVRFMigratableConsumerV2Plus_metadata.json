@@ -1,0 +1,77 @@
+{
+	"compiler": {
+		"version": "0.8.20+commit.a1b79de6"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "vrfCoordinator",
+						"type": "address"
+					}
+				],
+				"name": "CoordinatorSet",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "vrfCoordinator",
+						"type": "address"
+					}
+				],
+				"name": "setCoordinator",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"details": "This interface is designed to be used in VRFConsumerBaseV2Plus.",
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {
+				"setCoordinator(address)": {
+					"notice": "Sets the VRF Coordinator addressThis method should only be callable by the coordinator or contract owner"
+				}
+			},
+			"notice": "The IVRFMigratableConsumerV2Plus interface defines themethod required to be implemented by all V2Plus consumers.",
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contract/GiveawayWinWithDrop_flattened.sol": "IVRFMigratableConsumerV2Plus"
+		},
+		"evmVersion": "shanghai",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contract/GiveawayWinWithDrop_flattened.sol": {
+			"keccak256": "0x5ea2a57d62de3e8ebb547f45b3633fc236c532b50ec8078bd999efcb824a9998",
+			"urls": [
+				"bzz-raw://d359e3473e82d4c7e25fddfc88a5890a321fa0df9d7e1d55b1be9b78a8768a61",
+				"dweb:/ipfs/QmeLUpRBki7rNQ6pwz6t2WnPW3Zo6SCWUkrVKjhbsqC3PH"
+			]
+		}
+	},
+	"version": 1
+}
