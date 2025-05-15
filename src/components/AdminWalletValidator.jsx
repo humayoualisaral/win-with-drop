@@ -31,19 +31,23 @@ export default function AdminWalletAddressInput() {
     account
   } = useMultiGiveaway()
 
-  // Color scheme
+  // Updated color scheme to match the purple grid background from EmailValidator
   const colors = {
-    primary: '#000',          // Black
-    secondary: '#513763',     // Cyan
-    success: 'rgb(234 179 8)', // Yellow/gold
-    error: '#dc2626',         // Red
-    background: '#f8fafc',    // Light background
-    card: '#ffffff',          // White for cards
-    text: '#0f172a',          // Dark text
-    lightText: '#64748b',     // Lighter text
-    border: '#e2e8f0',        // Border color
-    highlight: 'rgb(255 221 96)', // Highlight yellow
-    danger: '#ef4444'         // Red for remove button
+    primary: "#513763", // Deep purple that matches the background theme
+    secondary: "#8E4FC3", // Lighter purple for secondary elements
+    success: "#EAAE08", // Gold color for success states
+    error: "#dc2626", // Red for errors
+    background: "rgba(183, 140, 219, 0.1)", // Very light purple bg
+    card: "#ffffff", // White for cards
+    text: "#2D1B36", // Deep purple text
+    lightText: "#64748b", // Slate-500 - softer secondary text
+    border: "#B78CDB", // Light purple border
+    highlight: "rgba(234, 174, 8, 0.18)", // Light gold for highlights
+    tableHeaderBg: "#513763", // Dark purple for table headers
+    tableStripeBg: "rgba(183, 140, 219, 0.05)", // Very light purple for table striping
+    buttonGradient: "linear-gradient(135deg, rgb(234 179 8) 0%, #8E4FC3 100%)", // Purple gradient for buttons
+    cardBoxShadow: "0 8px 30px rgba(183, 140, 219, 0.2)", // Soft purple shadow
+    dangerGradient: "linear-gradient(135deg, #ff4d4d 0%, #c53030 100%)" // Red gradient for danger buttons
   }
   
   // Validate Ethereum wallet address (0x followed by 40 hex characters)
@@ -243,15 +247,23 @@ export default function AdminWalletAddressInput() {
   // Show loading state during initialization or owner status check
   if (initializing || ownerLoading) {
     return (
-      <div className="bg-slate-50 p-8 pt-[90px]">
-        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
-            <Wallet className="mr-3 text-white" size={28} />
-            <h2 className="text-2xl font-bold text-white">Admin Management</h2>
+      <div className="p-8 pt-[90px]">
+        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden" style={{ boxShadow: colors.cardBoxShadow }}>
+          <div className="w-full p-6 flex items-center relative overflow-hidden" style={{ 
+            background: colors.buttonGradient,
+          }}>
+            {/* Decorative elements */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white opacity-10"></div>
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white opacity-5"></div>
+            
+            <Wallet className="mr-3 text-white relative z-10" size={28} />
+            <h2 className="text-2xl font-bold text-white relative z-10">Admin Management</h2>
           </div>
           <div className="p-8 flex flex-col items-center justify-center">
-            <Loader2 className="animate-spin text-cyan-600 mb-4" size={36} />
-            <p className="text-lg text-cyan-600">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: colors.background }}>
+              <Loader2 className="animate-spin" style={{ color: colors.secondary }} size={36} />
+            </div>
+            <p className="text-lg" style={{ color: colors.primary }}>
               {initializing ? "Initializing wallet connection..." : "Checking permissions..."}
             </p>
           </div>
@@ -263,14 +275,23 @@ export default function AdminWalletAddressInput() {
   // Show connection needed message if not connected
   if (!isConnected) {
     return (
-      <div className="bg-slate-50 p-8 pt-[90px]">
-        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
-            <Wallet className="mr-3 text-white" size={28} />
-            <h2 className="text-2xl font-bold text-white">Admin Management</h2>
+      <div className="p-8 pt-[90px]">
+        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden" style={{ boxShadow: colors.cardBoxShadow }}>
+          <div className="w-full p-6 flex items-center relative overflow-hidden" style={{ 
+            background: colors.buttonGradient,
+          }}>
+            {/* Decorative elements */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white opacity-10"></div>
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white opacity-5"></div>
+            
+            <Wallet className="mr-3 text-white relative z-10" size={28} />
+            <h2 className="text-2xl font-bold text-white relative z-10">Admin Management</h2>
           </div>
           <div className="p-8 text-center">
-            <p className="text-lg text-amber-600">
+            <div className="inline-block p-4 rounded-full mb-4" style={{ background: colors.background }}>
+              <XCircle size={36} style={{ color: colors.secondary }} />
+            </div>
+            <p className="text-lg" style={{ color: colors.secondary }}>
               Please connect your wallet to manage admins.
             </p>
           </div>
@@ -282,14 +303,23 @@ export default function AdminWalletAddressInput() {
   // Check if user has permission to manage admins
   if (!ownerStatus) {
     return (
-      <div className="bg-slate-50 p-8 pt-[90px]">
-        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
-            <Wallet className="mr-3 text-white" size={28} />
-            <h2 className="text-2xl font-bold text-white">Admin Management</h2>
+      <div className="p-8 pt-[90px]">
+        <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden" style={{ boxShadow: colors.cardBoxShadow }}>
+          <div className="w-full p-6 flex items-center relative overflow-hidden" style={{ 
+            background: colors.buttonGradient,
+          }}>
+            {/* Decorative elements */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white opacity-10"></div>
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white opacity-5"></div>
+            
+            <Wallet className="mr-3 text-white relative z-10" size={28} />
+            <h2 className="text-2xl font-bold text-white relative z-10">Admin Management</h2>
           </div>
           <div className="p-8 text-center">
-            <p className="text-lg text-red-600">
+            <div className="inline-block p-4 rounded-full mb-4" style={{ background: "rgba(239, 68, 68, 0.1)" }}>
+              <XCircle size={36} color={colors.error} />
+            </div>
+            <p className="text-lg" style={{ color: colors.error }}>
               Only the contract owner can manage admins. 
             </p>
           </div>
@@ -299,19 +329,27 @@ export default function AdminWalletAddressInput() {
   }
 
   return (
-    <div className="bg-slate-50 p-8 pt-[90px]">
-      <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
+    <div className="p-8 pt-[90px]">
+      <div className="w-full max-w-xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden" style={{ boxShadow: colors.cardBoxShadow }}>
         {/* Header Section */}
-        <div className="w-full p-6 flex items-center" style={{ backgroundColor: colors.primary }}>
-          <Wallet className="mr-3 text-white" size={28} />
-          <h2 className="text-2xl font-bold text-white">Admin Management</h2>
+        <div className="w-full p-6 flex items-center relative overflow-hidden" style={{ 
+          background: colors.buttonGradient,
+        }}>
+          {/* Decorative elements */}
+          <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white opacity-10"></div>
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white opacity-5"></div>
+          
+          <Wallet className="mr-3 text-white relative z-10" size={28} />
+          <h2 className="text-2xl font-bold text-white relative z-10">Admin Management</h2>
         </div>
         
         {/* Loading indicator if context is still loading */}
         {contextLoading && (
           <div className="p-8 flex flex-col items-center justify-center">
-            <Loader2 className="animate-spin text-cyan-600 mb-4" size={36} />
-            <p className="text-lg text-cyan-600">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: colors.background }}>
+              <Loader2 className="animate-spin" style={{ color: colors.secondary }} size={36} />
+            </div>
+            <p className="text-lg" style={{ color: colors.primary }}>
               Loading admin information...
             </p>
           </div>
@@ -326,14 +364,16 @@ export default function AdminWalletAddressInput() {
                 value={address}
                 onChange={handleInputChange}
                 placeholder="0x..."
-                className="w-full px-4 py-4 text-lg bg-slate-50 text-slate-900 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all"
+                className="w-full px-4 py-4 text-lg rounded-lg border-2 focus:outline-none transition-all"
                 style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
                   borderColor: isTouched 
                     ? isValid 
                       ? isAdminAlready ? colors.error : colors.success
                       : colors.error 
                     : colors.border,
-                  boxShadow: isTouched && isValid && !isAdminAlready ? `0 0 0 2px ${colors.highlight}` : 'none'
+                  boxShadow: isTouched && isValid && !isAdminAlready ? `0 0 15px rgba(234, 174, 8, 0.2)` : '0 0 15px rgba(183, 140, 219,.1)',
+                  color: colors.text
                 }}
                 disabled={isLoading}
               />
@@ -360,7 +400,7 @@ export default function AdminWalletAddressInput() {
             )}
             
             {isTouched && isValid && isAdminAlready && (
-              <p className="mt-3 text-amber-600 text-sm">
+              <p className="mt-3 text-sm" style={{ color: colors.secondary }}>
                 This address is already an admin. You can only remove it.
               </p>
             )}
@@ -377,11 +417,13 @@ export default function AdminWalletAddressInput() {
               <button
                 onClick={handleAddAdmin}
                 disabled={!isValid || isAdminAlready || isLoading}
-                className="py-4 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center"
+                className="py-3 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center shadow-md"
                 style={{
-                  backgroundColor: isValid && !isAdminAlready && !isLoading ? colors.secondary : '#e2e8f0',
+                  background: isValid && !isAdminAlready && !isLoading ? colors.buttonGradient : '#e2e8f0',
                   color: isValid && !isAdminAlready && !isLoading ? 'white' : colors.lightText,
-                  cursor: isValid && !isAdminAlready && !isLoading ? 'pointer' : 'not-allowed'
+                  cursor: isValid && !isAdminAlready && !isLoading ? 'pointer' : 'not-allowed',
+                  boxShadow: isValid && !isAdminAlready && !isLoading ? "0 4px 15px rgba(81, 55, 99, 0.4)" : "none",
+                  opacity: isValid && !isAdminAlready && !isLoading ? 1 : 0.5,
                 }}
               >
                 {isLoading ? (
@@ -395,11 +437,13 @@ export default function AdminWalletAddressInput() {
               <button
                 onClick={handleRemoveAdmin}
                 disabled={!isValid || !isAdminAlready || isLoading}
-                className="py-4 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center"
+                className="py-3 px-6 rounded-lg text-lg font-medium transition-all flex items-center justify-center shadow-md"
                 style={{
-                  backgroundColor: isValid && isAdminAlready && !isLoading ? colors.danger : '#e2e8f0',
+                  background: isValid && isAdminAlready && !isLoading ? colors.dangerGradient : '#e2e8f0',
                   color: isValid && isAdminAlready && !isLoading ? 'white' : colors.lightText,
-                  cursor: isValid && isAdminAlready && !isLoading ? 'pointer' : 'not-allowed'
+                  cursor: isValid && isAdminAlready && !isLoading ? 'pointer' : 'not-allowed',
+                  boxShadow: isValid && isAdminAlready && !isLoading ? "0 4px 15px rgba(220, 38, 38, 0.4)" : "none",
+                  opacity: isValid && isAdminAlready && !isLoading ? 1 : 0.5,
                 }}
               >
                 {isLoading ? (
@@ -413,51 +457,69 @@ export default function AdminWalletAddressInput() {
             
             {/* Transaction processing indicator */}
             {isLoading && (
-              <div className="mt-4 text-center text-cyan-600">
-                Processing transaction... Please confirm in your wallet
+              <div className="mt-6 p-4 rounded-lg text-center" style={{ backgroundColor: colors.background, color: colors.secondary }}>
+                <div className="flex items-center justify-center">
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Processing transaction... Please confirm in your wallet
+                </div>
               </div>
             )}
           </div>
         )}
       </div>
       
-      {/* Popup message */}
+      {/* Improved Popup Message - Styled similarly to the EmailValidator component */}
       {showPopup && operationMessage.message && (
         <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
           <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowPopup(false)}></div>
-          <div className="bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-md z-10 transform transition-all">
+          <div className="bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-md z-10 transform transition-all"
+               style={{ boxShadow: colors.cardBoxShadow }}>
+            {/* Popup Header with gradient background */}
             <div 
-              className="p-4 w-full" 
+              className="p-6 relative overflow-hidden" 
               style={{ 
-                backgroundColor: operationMessage.type === 'success' ? colors.success : colors.error 
+                background: operationMessage.type === 'success' 
+                  ? colors.buttonGradient
+                  : colors.dangerGradient
               }}
             >
-              <h3 className="text-xl font-bold text-white text-center">
+              {/* Decorative elements */}
+              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white opacity-10"></div>
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white opacity-5"></div>
+              
+              <h3 className="text-2xl font-bold text-white text-center relative z-10">
                 {operationMessage.type === 'success' ? 'Success' : 'Error'}
               </h3>
             </div>
             
             <div className="p-6">
-              <div className="flex items-center justify-center mb-4">
+              <div className="flex items-center justify-center mb-6">
                 {operationMessage.type === 'success' ? (
-                  <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center">
-                    <CheckCircle size={40} color={colors.success} />
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center" 
+                       style={{ background: "rgba(234, 174, 8, 0.1)" }}>
+                    <CheckCircle size={50} color={colors.success} />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                    <XCircle size={40} color={colors.error} />
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center"
+                       style={{ background: "rgba(239, 68, 68, 0.1)" }}>
+                    <XCircle size={50} color={colors.error} />
                   </div>
                 )}
               </div>
               
-              <p className="text-center text-lg">
+              <p className="text-center text-lg mb-6" style={{ color: colors.text }}>
                 {operationMessage.message}
               </p>
               
-              <div className="mt-6 flex justify-center">
+              <div className="flex justify-center">
                 <button
                   onClick={() => setShowPopup(false)}
-                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="px-8 py-3 rounded-lg font-medium shadow-md transition-all hover:shadow-lg hover:opacity-90 active:opacity-75"
+                  style={{
+                    background: colors.buttonGradient,
+                    color: "white",
+                    boxShadow: "0 4px 15px rgba(81, 55, 99, 0.4)"
+                  }}
                 >
                   Close
                 </button>

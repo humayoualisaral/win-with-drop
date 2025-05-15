@@ -25,7 +25,7 @@ export default function Action() {
   }, [activeGiveaway]);// Convert to string to avoid deep equality issues
   return (
     <div>
-      <div className="flex space-x-2 mb-4 ml-2 mt-2 bg-gray-100 p-4">
+      <div className="flex space-x-2 mb-4 ml-2 mt-2  p-4">
         <button
           onClick={() => setActiveSection("addUsers")}
           className={`px-2 py-1 text-xs rounded transition-colors ${activeSection === "addUsers"

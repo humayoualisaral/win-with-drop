@@ -1,8 +1,31 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useMultiGiveaway } from "@/context/MultiGiveawayContext"
 import { useActiveGiveaway } from "@/context/ActiveGiveaway"
 import { useTransaction } from "@/context/TransactionContext"
+import EmailInputSection from "./EmailInputSection"
+import ValidationResultsSection from "./ValidationResultsSection"
+
+// Maximum number of emails allowed
+const MAX_EMAILS = 10
+
+// Updated color scheme to match the purple grid background
+const colors = {
+  primary: "#513763", // Deep purple that matches the background theme
+  secondary: "#8E4FC3", // Lighter purple for secondary elements
+  success: "#EAAE08", // Gold color for success states
+  error: "#dc2626", // Red for errors
+  background: "rgba(183, 140, 219, 0.1)", // Very light purple bg
+  card: "#ffffff", // White for cards
+  text: "#2D1B36", // Deep purple text
+  lightText: "#64748b", // Slate-500 - softer secondary text
+  border: "#B78CDB", // Light purple border
+  highlight: "rgba(234, 174, 8, 0.18)", // Light gold for highlights
+  tableHeaderBg: "#513763", // Dark purple for table headers
+  tableStripeBg: "rgba(183, 140, 219, 0.05)", // Very light purple for table striping
+  buttonGradient: "linear-gradient(135deg, rgb(234 179 8) 0%, #8E4FC3 100%)", // Purple gradient for buttons
+  cardBoxShadow: "0 8px 30px rgba(183, 140, 219, 0.2)" // Soft purple shadow
+}
 
 export default function EmailValidator() {
   const [input, setInput] = useState("")
@@ -11,7 +34,6 @@ export default function EmailValidator() {
   const [highlightedText, setHighlightedText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submissionResult, setSubmissionResult] = useState(null)
-  const textareaRef = useRef(null)
   
   // Get transaction functions from context
   const { startTransaction, completeTransaction, failTransaction } = useTransaction()
@@ -21,23 +43,6 @@ export default function EmailValidator() {
   
   // Props for the active giveaway
   const { activeGiveaway } = useActiveGiveaway()
-
-  // Maximum number of emails allowed
-  const MAX_EMAILS = 10
-
-  // Color scheme
-  const colors = {
-    primary: "#000", // Deeper indigo - more authoritative
-    secondary: "#0891b2", // Cyan - complementary to indigo
-    success: "rgb(234 179 8)", // Emerald - keep as is for success states
-    error: "#dc2626", // Darker red - less harsh but still clear
-    background: "#f8fafc", // Lighter background for better contrast
-    card: "#ffffff", // White for cards
-    text: "#0f172a", // Slate-900 - deeper text for better readability
-    lightText: "#64748b", // Slate-500 - softer secondary text
-    border: "#e2e8f0", // Subtle border color
-    highlight: "rgb(234 179 8 / 18%)", // Very light blue for highlights
-  }
 
   // Function to validate a single email address
   const isValidEmail = (email) => {
@@ -124,33 +129,6 @@ export default function EmailValidator() {
     const highlighted = createHighlightedText(input, results)
     setHighlightedText(highlighted)
   }, [input])
-
-  // Synchronize scrolling between the textarea and the highlight overlay
-  const handleTextareaScroll = () => {
-    if (textareaRef.current) {
-      const highlightDiv = textareaRef.current.previousSibling
-      if (highlightDiv) {
-        highlightDiv.scrollTop = textareaRef.current.scrollTop
-        highlightDiv.scrollLeft = textareaRef.current.scrollLeft
-      }
-    }
-  }
-
-  // Format email for display (truncate middle if too long)
-  const formatEmail = (email) => {
-    if (!email || email.length < 25) return email
-    const atIndex = email.indexOf("@")
-    if (atIndex <= 0) return email
-
-    const username = email.substring(0, atIndex)
-    const domain = email.substring(atIndex)
-
-    if (username.length > 10) {
-      return `${username.substring(0, 8)}...${domain}`
-    }
-
-    return email
-  }
   
   // Check if the giveaway is active
   const isGiveawayActive = activeGiveaway && activeGiveaway.active === true
@@ -215,192 +193,71 @@ export default function EmailValidator() {
   }
 
   return (
-    <div className="flex items-center justify-center p-4" style={{ backgroundColor: colors.background }}>
+    <div className="flex items-center justify-center p-4 mt-6">
       <div className="w-full max-w-6xl">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b" style={{ borderColor: colors.primary, backgroundColor: colors.primary }}>
-            <h2 className="text-2xl font-bold text-center text-white">
+        <div className="bg-white rounded-xl overflow-hidden backdrop-blur-sm bg-opacity-90" style={{ boxShadow: colors.cardBoxShadow }}>
+          {/* Header with gradient background */}
+          <div className="p-6 border-b relative overflow-hidden" style={{ 
+            background: colors.buttonGradient,
+            borderColor: colors.border 
+          }}>
+            {/* Decorative elements */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white opacity-10"></div>
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white opacity-5"></div>
+            
+            <h2 className="text-2xl font-bold text-center text-white relative z-10 capitalize">
               {activeGiveaway 
-                ? `Add Participants to (${activeGiveaway.name})` 
+                ? `Add Participants to ${activeGiveaway.name}` 
                 : "Select a Giveaway to Add Participants"}
             </h2>
           </div>
 
-          <div className="p-6">
-            {/* Display inactive giveaway message */}
-            {activeGiveaway && !isGiveawayActive && (
-              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-center font-medium">
-                Giveaway is not active
-              </div>
-            )}
-            
+          <div className="p-6">      
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Left column - Text Area */}
-              <div className="w-full lg:w-1/2">
-                <div className="mb-4">
-                  <label className="block mb-2 font-medium" style={{ color: colors.primary }} htmlFor="email-address">
-                    Enter email address(es) - maximum {MAX_EMAILS} emails
-                  </label>
-
-                  <div className="relative h-64 border-2 rounded-lg" style={{ borderColor: colors.primary }}>
-                    {/* Highlighted overlay */}
-                    <div
-                      className="absolute inset-0 overflow-auto whitespace-pre-wrap p-4 font-mono text-transparent pointer-events-none"
-                      dangerouslySetInnerHTML={{ __html: highlightedText }}
-                      style={{
-                        caretColor: "transparent",
-                        zIndex: 1,
-                        overflowX: "hidden",
-                      }}
-                    />
-
-                    {/* Actual textarea */}
-                    <textarea
-                      ref={textareaRef}
-                      id="email-address"
-                      className="absolute inset-0 w-full h-full p-4 font-mono resize-none bg-transparent"
-                      style={{
-                        caretColor: colors.text,
-                        overflowX: "hidden",
-                      }}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onScroll={handleTextareaScroll}
-                      placeholder="Enter email addresses separated by commas:&#10;&#10;john.doe@example.com,&#10;jane.smith@company.org,&#10;..."
-                      disabled={!activeGiveaway || !isGiveawayActive || isSubmitting}
-                    />
-                  </div>
-
-                  <div className="mt-2 text-sm" style={{ color: colors.lightText }}>
-                    <p>Separate multiple email addresses with commas. Maximum {MAX_EMAILS} emails allowed.</p>
-                    {validationResults.length > MAX_EMAILS && (
-                      <p className="text-red-500 font-medium mt-1">
-                        Too many emails! Please limit to {MAX_EMAILS} emails per submission.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <EmailInputSection 
+                input={input}
+                setInput={setInput}
+                highlightedText={highlightedText}
+                activeGiveaway={activeGiveaway}
+                isGiveawayActive={isGiveawayActive}
+                isSubmitting={isSubmitting}
+                validationResults={validationResults}
+                colors={colors}
+                MAX_EMAILS={MAX_EMAILS}
+              />
 
               {/* Right column - Validation Table */}
-              <div className="w-full lg:w-1/2">
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-medium" style={{ color: colors.primary }}>
-                      Validation Results
-                    </h3>
-                    {validationResults.length > 0 && (
-                      <div
-                        className="px-3 py-1 rounded-full text-white text-xs font-medium"
-                        style={{ 
-                          backgroundColor: isValid ? colors.success : colors.secondary 
-                        }}
-                      >
-                        {isValid ? "All Valid" : `${validationResults.filter((r) => !r.isValid).length} Invalid`}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="overflow-hidden rounded-lg border border-gray-200">
-                    <div className="h-64 overflow-y-auto">
-                      {validationResults.length > 0 ? (
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead>
-                            <tr style={{ backgroundColor: colors.primary }}>
-                              <th
-                                scope="col"
-                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-8"
-                              >
-                                #
-                              </th>
-                              <th
-                                scope="col"
-                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
-                              >
-                                Email
-                              </th>
-                              <th
-                                scope="col"
-                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-16"
-                              >
-                                Status
-                              </th>
-                              <th
-                                scope="col"
-                                className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
-                              >
-                                Issue
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {validationResults.slice(0, MAX_EMAILS).map((result, index) => (
-                              <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                                <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {index + 1}
-                                </td>
-                                <td className="px-3 py-3 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    <div
-                                      className="h-5 w-5 rounded-full flex items-center justify-center mr-2"
-                                      style={{ backgroundColor: result.isValid ? colors.success : colors.error }}
-                                    >
-                                      <span className="text-white font-medium text-xs">
-                                        {result.isValid ? "✓" : "✗"}
-                                      </span>
-                                    </div>
-                                    <div className="font-mono text-xs" title={result.email}>
-                                      {formatEmail(result.email)}
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-3 py-3 whitespace-nowrap">
-                                  <span
-                                    className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                    style={{
-                                      backgroundColor: result.isValid
-                                        ? "rgba(16, 185, 129, 0.1)"
-                                        : "rgba(239, 68, 68, 0.1)",
-                                      color: result.isValid ? colors.success : colors.error,
-                                    }}
-                                  >
-                                    {result.isValid ? "Valid" : "Invalid"}
-                                  </span>
-                                </td>
-                                <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">
-                                  {!result.isValid && result.errorMessage}
-                                </td>
-                              </tr>
-                            ))}
-                            {validationResults.length > MAX_EMAILS && (
-                              <tr className="bg-red-50">
-                                <td colSpan="4" className="px-3 py-3 text-center text-xs text-red-500 font-medium">
-                                  Only the first {MAX_EMAILS} emails will be processed. Please remove extra emails.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-gray-400 p-6">
-                          <p>
-                            {!activeGiveaway 
-                              ? "Select a giveaway first" 
-                              : !isGiveawayActive
-                                ? "Giveaway is not active" 
-                                : "Enter email addresses to see validation results"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ValidationResultsSection 
+                validationResults={validationResults}
+                activeGiveaway={activeGiveaway}
+                isGiveawayActive={isGiveawayActive}
+                colors={colors}
+                MAX_EMAILS={MAX_EMAILS}
+              />
             </div>
 
             {/* Submission result message */}
             {submissionResult && (
-              <div className={`my-4 p-4 rounded-lg ${submissionResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+              <div 
+                className={`my-4 p-4 rounded-lg flex items-center ${
+                  submissionResult.success ? 'bg-green-50 text-green-800 border border-green-200' : 
+                  'bg-red-50 text-red-800 border border-red-200'
+                }`}
+              >
+                <div className={`rounded-full p-1 mr-3 ${
+                  submissionResult.success ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  {submissionResult.success ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
                 {submissionResult.message}
               </div>
             )}
@@ -409,18 +266,33 @@ export default function EmailValidator() {
             <div className="flex justify-center mt-8 mb-4">
               <button
                 disabled={!isValid || !activeGiveaway || !isGiveawayActive || isSubmitting}
-                className={`px-10 py-3 text-white font-medium text-lg rounded-lg shadow-md transition-all duration-300 ${
+                className={`px-10 py-3 text-white font-medium text-lg rounded-lg shadow-md transition-all duration-300 flex items-center ${
                   isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "hover:shadow-lg hover:opacity-90 active:opacity-75 cursor-pointer" : "cursor-not-allowed"
                 }`}
                 style={{
-                  backgroundColor: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "#513763" : "#e2e8f0",
+                  background: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? colors.buttonGradient : "#e2e8f0",
                   color: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "white" : colors.lightText,
                   opacity: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? 1 : 0.5,
-                  boxShadow: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "0 4px 10px rgba(183, 140, 219, 0.4)" : "none",
+                  boxShadow: isValid && activeGiveaway && isGiveawayActive && !isSubmitting ? "0 4px 15px rgba(81, 55, 99, 0.4)" : "none",
                 }}
                 onClick={handleAddUsers}
               >
-                {isSubmitting ? "Adding..." : "Add Users to Giveaway"}
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                    </svg>
+                    Add Users to Giveaway
+                  </>
+                )}
               </button>
             </div>
           </div>

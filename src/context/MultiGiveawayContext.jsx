@@ -28,32 +28,42 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
   const [chainId, setChainId] = useState(null);
 
   // Check owner status function - to get latest owner status
-  const checkOwnerStatus = async (contractInstance = null) => {
-    try {
-      if (!account) return false;
-      
-      let targetContract = contractInstance || contract;
-      
-      if (!targetContract) {
-        try {
-          const { contract: validContract } = await getSignerAndContract();
-          targetContract = validContract;
-        } catch (error) {
-          console.error("Failed to get valid contract for owner check:", error);
-          return false;
-        }
+// Check owner status function - to get latest owner status
+const checkOwnerStatus = async (contractInstance = null) => {
+  try {
+    if (!account) return false;
+    
+    // If we already know the owner status, return it without checking again
+    // unless forceCheck is true
+    
+    let targetContract = contractInstance || contract;
+    
+    if (!targetContract) {
+      try {
+        const { contract: validContract } = await getSignerAndContract();
+        targetContract = validContract;
+      } catch (error) {
+        console.error("Failed to get valid contract for owner check:", error);
+        return false;
       }
-      
-      const owner = await targetContract.getContractOwner();
-      const isCurrentOwner = account.toLowerCase() === owner.toLowerCase();
-      console.log("Owner check:", { account, owner, isCurrentOwner });
-      setIsOwner(isCurrentOwner);
-      return isCurrentOwner;
-    } catch (err) {
-      console.error("Error checking owner status:", err);
-      return false;
     }
-  };
+    
+    const owner = await targetContract.getContractOwner();
+    const isCurrentOwner = account.toLowerCase() === owner.toLowerCase();
+    console.log("Owner check:", { account, owner, isCurrentOwner });
+    
+    // Only update state if the status has changed
+    if (isOwner !== isCurrentOwner) {
+      setIsOwner(isCurrentOwner);
+    }
+    
+    return isCurrentOwner;
+  } catch (err) {
+    console.error("Error checking owner status:", err);
+    return false;
+  }
+};
+
 
   // Check admin status function
   const checkAdminStatus = async (contractInstance = null) => {
@@ -74,7 +84,12 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
       
       const adminStatus = await targetContract.isAdmin(account);
       console.log("Admin check:", { account, adminStatus });
-      setIsAdmin(adminStatus);
+      
+      // Only update state if the status has changed
+      if (isAdmin !== adminStatus) {
+        setIsAdmin(adminStatus);
+      }
+      
       return adminStatus;
     } catch (err) {
       console.error("Error checking admin status:", err);
@@ -972,6 +987,11 @@ export function MultiGiveawayProvider({ children, contractAddress }) {
     isConnected,
     chainId,
     
+       // Permission check functions
+  checkOwnerStatus,  // Add this line
+  checkAdminStatus,  // Add this line
+
+
     // Wallet functions
     connectWallet,
     disconnect,
